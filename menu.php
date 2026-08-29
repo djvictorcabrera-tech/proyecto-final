@@ -1,5 +1,9 @@
 <?php
-// Procesamiento Backend PHP
+require_once 'SessionManager.php';
+
+$session = new SessionManager();
+$usuarioConectado = $_SESSION['usuario'] ?? $_SESSION['user_name'] ?? 'Usuario Activo';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $rawInput = file_get_contents('php://input');
@@ -41,12 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --text-primary: #ffffff;
             --text-muted: #8e9bb0;
             
-            /* TEMA AZUL */
             --color-primary: #3b82f6;
             --color-primary-hover: #2563eb;
             --color-primary-dark: #1d4ed8;
             --color-danger: #ef4444;
-            --color-danger-hover: #dc2626;
 
             --border-color: #232f45;
             --radius-lg: 12px;
@@ -69,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
         }
 
-        /* Fullscreen Layout */
         .app-container {
             width: 100vw;
             height: 100vh;
@@ -78,10 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #111827;
         }
 
-        /* Header Bar */
+        /* Header Bar - Layout en 3 Columnas */
         .app-header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
             padding: 16px 32px;
             background-color: var(--bg-sidebar);
@@ -97,13 +98,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-transform: uppercase;
         }
 
+        /* Bloque central del usuario */
+        .user-center-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+
         .header-actions {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 20px;
         }
 
-        /* Menú Desplegable de Mesas */
         .table-select-container {
             display: flex;
             align-items: center;
@@ -141,29 +165,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #ffffff;
         }
 
-        /* Botón Cerrar Sesión */
-         .btn-logout {
-         background-color: transparent;
-         color: var(--color-danger);
-         border: 1px solid var(--color-danger);
-         padding: 8px 16px;
-         border-radius: var(--radius-sm);
-         font-size: 0.85rem;
-         font-weight: 600;
-         text-decoration: none;
-         transition: all 0.2s ease;
-         display: inline-flex;
-         align-items: center;
-         gap: 6px;
-    }
+        .btn-logout {
+            background-color: transparent;
+            color: var(--color-danger);
+            border: 1px solid var(--color-danger);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
 
-         .btn-logout:hover {
-         background-color: var(--color-danger);
-         color: #ffffff;
-         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
+        .btn-logout:hover {
+            background-color: var(--color-danger);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
 
-        /* Main Content Grid */
         .main-layout {
             display: grid;
             grid-template-columns: 1fr 380px;
@@ -172,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
         }
 
-        /* Menu Section */
         .menu-section {
             padding: 32px;
             border-right: 1px solid var(--border-color);
@@ -182,7 +200,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow-y: auto;
         }
 
-        /* Categories Filter */
         .categories-filter {
             display: flex;
             gap: 12px;
@@ -213,7 +230,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
         }
 
-        /* Products Grid */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -304,7 +320,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: scale(1.05);
         }
 
-        /* Sidebar Order Section */
         .order-section {
             background-color: var(--bg-sidebar);
             padding: 32px;
@@ -361,7 +376,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 0.85rem;
         }
 
-        /* Quantity Controls (+/-) */
         .cart-item-controls {
             display: flex;
             align-items: center;
@@ -419,7 +433,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-style: italic;
         }
 
-        /* Order Footer */
         .order-footer {
             border-top: 1px solid var(--border-color);
             padding-top: 20px;
@@ -476,10 +489,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <div class="app-container">
-    <!-- Header con Selector de Mesas y Cerrar Sesión -->
     <header class="app-header">
         <h1 class="app-title">Menú Digital</h1>
         
+        <div class="user-center-display">
+            <span class="user-status-dot"></span>
+            <span><?php echo htmlspecialchars($usuarioConectado); ?></span>
+        </div>
+
         <div class="header-actions">
             <div class="table-select-container">
                 <span class="table-select-label">Ubicación:</span>
@@ -497,9 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </header>
 
-    <!-- Main Content Layout -->
     <div class="main-layout">
-        <!-- Menu Section -->
         <section class="menu-section">
             <div class="categories-filter">
                 <button class="category-btn active" onclick="filterCategory('hamburguesas', this)">Hamburguesas</button>
@@ -507,18 +522,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button class="category-btn" onclick="filterCategory('postres', this)">Postres</button>
             </div>
 
-            <div class="products-grid" id="products-container">
-                <!-- Se inyecta con JS -->
-            </div>
+            <div class="products-grid" id="products-container"></div>
         </section>
 
-        <!-- Order Sidebar -->
         <aside class="order-section">
             <div>
                 <h2 class="order-header-title">TU PEDIDO</h2>
-                <ul class="cart-list" id="cart-items">
-                    <!-- Items inyectados dinámicamente -->
-                </ul>
+                <ul class="cart-list" id="cart-items"></ul>
             </div>
 
             <div class="order-footer">
@@ -533,7 +543,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    // Base de datos de productos
     const dbProducts = [
         { id: 1, name: 'Burger Clásica', desc: 'Carne 180g y cheddar', price: 8.50, category: 'hamburguesas' },
         { id: 2, name: 'Burger Doble', desc: 'Doble carne y tocino', price: 11.00, category: 'hamburguesas' },
@@ -542,7 +551,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         { id: 5, name: 'Helado Sundae', desc: 'Chocolate y galleta', price: 4.50, category: 'postres' }
     ];
 
-    // Estado del Carrito
     let cart = [
         { id: 1, name: 'Burger Clásica', qty: 5, price: 8.50 },
         { id: 3, name: 'Refresco 500ml', qty: 2, price: 2.00 },
@@ -552,7 +560,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     let currentCategory = 'hamburguesas';
 
-    // Renderizar Productos
     function renderProducts() {
         const container = document.getElementById('products-container');
         container.innerHTML = '';
@@ -575,7 +582,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     }
 
-    // Filtrar por Categoría
     function filterCategory(cat, btn) {
         currentCategory = cat;
         document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
@@ -583,14 +589,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         renderProducts();
     }
 
-    // Gestión Dinámica de Cantidades (+ y -)
     function changeQuantity(productId, delta) {
         const existingIndex = cart.findIndex(item => item.id === productId);
 
         if (existingIndex !== -1) {
             cart[existingIndex].qty += delta;
 
-            // Eliminar producto si llega a 0
             if (cart[existingIndex].qty <= 0) {
                 cart.splice(existingIndex, 1);
             }
@@ -603,7 +607,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         renderCart();
     }
 
-    // Renderizar Carrito
     function renderCart() {
         const cartContainer = document.getElementById('cart-items');
         const totalEl = document.getElementById('cart-total');
@@ -641,11 +644,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         totalEl.textContent = `$${total.toFixed(2)}`;
     }
 
-    // Enviar Comanda a Cocina mediante AJAX/Fetch y Redirigir
     async function sendToKitchen() {
         if (cart.length === 0) return;
 
-        // Capturar la mesa seleccionada en el menú desplegable
         const mesaSeleccionada = document.getElementById('select-mesa').value;
         const totalCalculated = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
@@ -666,7 +667,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (result.status === 'success') {
                 cart = [];
                 renderCart();
-                // Redirección automática a la vista de cocina
                 window.location.href = result.redirect || 'menu_cocina.php';
             } else {
                 alert(`❌ Error: ${result.message}`);
@@ -677,7 +677,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Inicialización al cargar la página
     window.addEventListener('DOMContentLoaded', () => {
         renderProducts();
         renderCart();
