@@ -18,21 +18,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $passwordInput = trim($_POST['password'] ?? '');
 
     if (!empty($usuarioInput) && !empty($passwordInput)) {
-        $usuario = new Usuario();
+        $usuarioObj = new Usuario(); // Usamos un nombre claro para el objeto
 
-        if ($usuario->autenticar($usuarioInput, $passwordInput)) {
-            // CORREGIDO: Pasamos el ID, el nombre Y el rol al SessionManager
+        if ($usuarioObj->autenticar($usuarioInput, $passwordInput)) {
             $session->iniciarSesion(
-                $usuario->getId(), 
-                $usuario->getUsuario(), 
-                $usuario->getRol()
+                $usuarioObj->getId(), 
+                $usuarioObj->getUsuario(), 
+                $usuarioObj->getRol()
             );
 
-            // Redirigir inmediatamente después de iniciar sesión con éxito
-            header("Location: menu.php");
-            exit();
+            // Redirección según rol
+            if ($usuarioObj->getRol() === 'administrador') {
+                header("Location: crear_usuario.php");
+                exit();
+            } else {
+                header("Location: menu.php");
+                exit();
+            }
         } else {
-            $mensaje_error = "Usuario o contraseña incorrectos.";
+            // Muestra el mensaje específico configurado en la clase (ej: "Su usuario se encuentra inactivo")
+            $mensaje_error = $usuarioObj->getErrorMensaje();
         }
     } else {
         $mensaje_error = "Por favor, completa todos los campos.";
@@ -52,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-box">
-        <h2 class="centrado">Acceso Restaurante</h2>
+        <h2 class="centrado, form-group">Acceso Restaurante</h2>
         
         <?php if (!empty($mensaje_error)): ?>
             <div class="error"><?php echo htmlspecialchars($mensaje_error); ?></div>

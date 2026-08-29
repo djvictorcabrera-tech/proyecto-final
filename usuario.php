@@ -4,7 +4,8 @@ require_once 'conexion.php';
 class Usuario {
     private $id;
     private $usuario;
-    private $rol; // <--- Nueva propiedad para el rol
+    private $rol;
+    private $errorMensaje = ""; // <--- Propiedad para guardar mensajes específicos
     private $db;
 
     public function __construct() {
@@ -12,7 +13,6 @@ class Usuario {
         $this->db = $conn;
     }
 
-    // Getters
     public function getId() {
         return $this->id;
     }
@@ -21,16 +21,20 @@ class Usuario {
         return $this->usuario;
     }
 
-    public function getRol() { // <--- Nuevo getter para el rol
+    public function getRol() {
         return $this->rol;
     }
 
-    /**
-     * Autentica un usuario mediante un procedimiento almacenado usando MySQLi
-     */
+    public function getErrorMensaje() {
+        return $this->errorMensaje;
+    }
+
     public function autenticar($usuarioInput, $passwordInput) {
         try {
-            $stmt = $this->db->prepare("CALL sp_crear_usuario_y_rol(?)");
+            // Nota: Hacemos una consulta previa o ajustamos el procedure si queremos detectar el estado inactivo exacto,
+            // pero con el procedure actual, si no trae nada, validamos si el usuario al menos existe pero está inactivo.
+            
+            $stmt = $this->db->prepare("CALL sp_obtener_usuario_login(?)");
             
             if ($stmt) {
                 $stmt->bind_param("s", $usuarioInput);
@@ -40,22 +44,34 @@ class Usuario {
                 $data = $resultado->fetch_assoc();
                 
                 $stmt->close();
-
-                // Limpieza de buffers obligatoria en MySQLi con procedimientos almacenados
                 while($this->db->more_results() && $this->db->next_result());
 
-                // Verificamos la contraseña encriptada (o SHA2 si lo manejas directo en BD)
-                if ($data && password_verify($passwordInput, $data['password'])) {
-                    $this->id = $data['id_usuario']; // Asegúrate que coincida con tu columna
-                    $this->usuario = $data['nombre']; // Asegúrate que coincida con tu columna
-                    $this->rol = $data['nombre_rol']; // <--- Guardamos el rol (ej: 'Administrador', 'Cliente')
-                    
-                    return true;
+                if ($data) {
+                    $password_ingresada_hash = hash('sha256', $passwordInput);
+
+                    if ($password_ingresada_hash === $data['password']) {
+                        // Verificación extra por seguridad en PHP
+                        if ($data['estado'] === 'INACTIVO') {
+                            $this->errorMensaje = "Su usuario se encuentra inactivo.";
+                            return false;
+                        }
+
+                        $this->id = $data['id'];            
+                        $this->usuario = $data['usuario'];    
+                        $this->rol = $data['nombre_rol'];     
+                        
+                        return true;
+                    } else {
+                        $this->errorMensaje = "Usuario o contraseña incorrectos.";
+                    }
+                } else {
+                    $this->errorMensaje = "Usuario o contraseña incorrectos.";
                 }
             }
             return false;
         } catch (Exception $e) {
             error_log("Error en autenticación: " . $e->getMessage());
+            $this->errorMensaje = "Ocurrió un error en el sistema.";
             return false;
         }
     }

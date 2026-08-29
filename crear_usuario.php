@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         <div class="form-group">
             <label for="email">Correo Electrónico:</label>
-            <input type="email" id="email" name="email" required>
+            <input type="text" id="email" name="email" required>
         </div>
 
         <div class="form-group">
@@ -91,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <button type="submit">Registrar</button>
     </form>
     
-    <a href="login.php">
+    <a href="cerrar.php">
         <br>
-        <button type="button">Regresar</button>
+        <button type="button">Cerrar Sesion</button>
     </a>
 </div>
 
