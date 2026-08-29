@@ -97,6 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-transform: uppercase;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
         /* Menú Desplegable de Mesas */
         .table-select-container {
             display: flex;
@@ -134,6 +140,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: var(--bg-sidebar);
             color: #ffffff;
         }
+
+        /* Botón Cerrar Sesión */
+         .btn-logout {
+         background-color: transparent;
+         color: var(--color-danger);
+         border: 1px solid var(--color-danger);
+         padding: 8px 16px;
+         border-radius: var(--radius-sm);
+         font-size: 0.85rem;
+         font-weight: 600;
+         text-decoration: none;
+         transition: all 0.2s ease;
+         display: inline-flex;
+         align-items: center;
+         gap: 6px;
+    }
+
+         .btn-logout:hover {
+         background-color: var(--color-danger);
+         color: #ffffff;
+         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
 
         /* Main Content Grid */
         .main-layout {
@@ -448,19 +476,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <div class="app-container">
-    <!-- Header con Selector de Mesas -->
+    <!-- Header con Selector de Mesas y Cerrar Sesión -->
     <header class="app-header">
         <h1 class="app-title">Menú Digital</h1>
-        <div class="table-select-container">
-            <span class="table-select-label">Ubicación:</span>
-            <select id="select-mesa" class="table-select">
-                <option value="MESA 01">MESA 01</option>
-                <option value="MESA 02">MESA 02</option>
-                <option value="MESA 03">MESA 03</option>
-                <option value="MESA 04">MESA 04</option>
-                <option value="MESA 05" selected>MESA 05</option>
-                <option value="MESA 06">MESA 06</option>
-            </select>
+        
+        <div class="header-actions">
+            <div class="table-select-container">
+                <span class="table-select-label">Ubicación:</span>
+                <select id="select-mesa" class="table-select">
+                    <option value="MESA 01">MESA 01</option>
+                    <option value="MESA 02">MESA 02</option>
+                    <option value="MESA 03">MESA 03</option>
+                    <option value="MESA 04">MESA 04</option>
+                    <option value="MESA 05" selected>MESA 05</option>
+                    <option value="MESA 06">MESA 06</option>
+                </select>
+            </div>
+            
+            <a href="logout.php" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
 
@@ -649,7 +682,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         renderProducts();
         renderCart();
     });
-</script>
+</script>   
 
 </body>
 </html>
