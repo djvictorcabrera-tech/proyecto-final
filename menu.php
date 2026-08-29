@@ -2,8 +2,11 @@
 require_once 'SessionManager.php';
 
 $session = new SessionManager();
-$usuarioConectado = $_SESSION['usuario'] ?? $_SESSION['user_name'] ?? 'Usuario Activo';
 
+// Capturar el nombre del usuario guardado durante el login (soporta varias claves comunes de sesión)
+$usuarioConectado = $_SESSION['usuario'] ?? $_SESSION['user_name'] ?? $_SESSION['nombre'] ?? $_SESSION['user'] ?? 'Usuario Activo';
+
+// Procesamiento Backend PHP para recibir el pedido
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $rawInput = file_get_contents('php://input');
@@ -79,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #111827;
         }
 
-        /* Header Bar - Layout en 3 Columnas */
+        /* Header Layout (3 columnas) */
         .app-header {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -98,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-transform: uppercase;
         }
 
-        /* Bloque central del usuario */
+        /* Bloque central con el Usuario dinámico del Login */
         .user-center-display {
             display: flex;
             align-items: center;
@@ -492,6 +495,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <header class="app-header">
         <h1 class="app-title">Menú Digital</h1>
         
+        <!-- Nombre del usuario dinámico recibido del Login -->
         <div class="user-center-display">
             <span class="user-status-dot"></span>
             <span><?php echo htmlspecialchars($usuarioConectado); ?></span>
@@ -500,12 +504,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="header-actions">
             <div class="table-select-container">
                 <span class="table-select-label">Ubicación:</span>
+                <!-- Mesa 01 seleccionada por defecto -->
                 <select id="select-mesa" class="table-select">
-                    <option value="MESA 01">MESA 01</option>
+                    <option value="MESA 01" selected>MESA 01</option>
                     <option value="MESA 02">MESA 02</option>
                     <option value="MESA 03">MESA 03</option>
                     <option value="MESA 04">MESA 04</option>
-                    <option value="MESA 05" selected>MESA 05</option>
+                    <option value="MESA 05">MESA 05</option>
                     <option value="MESA 06">MESA 06</option>
                 </select>
             </div>
@@ -551,12 +556,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         { id: 5, name: 'Helado Sundae', desc: 'Chocolate y galleta', price: 4.50, category: 'postres' }
     ];
 
-    let cart = [
-        { id: 1, name: 'Burger Clásica', qty: 5, price: 8.50 },
-        { id: 3, name: 'Refresco 500ml', qty: 2, price: 2.00 },
-        { id: 2, name: 'Burger Doble', qty: 1, price: 11.00 },
-        { id: 5, name: 'Helado Sundae', qty: 12, price: 4.50 }
-    ];
+    // Carrito iniciado completamente VACÍO
+    let cart = [];
 
     let currentCategory = 'hamburguesas';
 
