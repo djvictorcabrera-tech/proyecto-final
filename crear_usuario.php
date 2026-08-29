@@ -7,44 +7,46 @@ $mensaje = "";
 // 2. Verificar si el formulario ha sido enviado por el método POST
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
-    // Capturamos los datos que el usuario escribió en el formulario
-    $usuario_nuevo = $_POST['usuario'] ?? '';
-    $password_plano = $_POST['password'] ?? '';
+    // Capturamos los datos del formulario (incluyendo el rol)
+    $nombre_rol     = trim($_POST['rol'] ?? '');
+    $descripcion_rol = "Rol asignado desde el registro web"; // Descripción por defecto o puedes agregar un input
+    $usuario_nuevo  = trim($_POST['usuario'] ?? '');
+    $email_nuevo    = trim($_POST['email'] ?? ''); // Necesitamos el email según tu tabla usuarios
+    $password_plano = trim($_POST['password'] ?? '');
+    $estado_usuario = 'ACTIVO';
 
     // Validamos que los campos no estén vacíos
-    if (!empty($usuario_nuevo) && !empty($password_plano)) {
+    if (!empty($nombre_rol) && !empty($usuario_nuevo) && !empty($email_nuevo) && !empty($password_plano)) {
 
-        // 3. Encriptar la contraseña de forma segura usando password_hash
-        $password_encriptado = password_hash($password_plano, PASSWORD_BCRYPT);
-
-        // 4. Preparar la consulta SQL usando sentencias preparadas (Evita Inyección SQL)
-        // Usamos INSERT para crear un usuario nuevo (o puedes usar UPDATE si ya existe)
-        $sql = "INSERT INTO usuarios2 (usuario, password) VALUES (?, ?)";
+        // NOTA: Como usaremos el procedimiento almacenado con SHA2 dentro de MySQL, 
+        // le pasamos la contraseña en texto plano y la base de datos la encripta.
+        
+        // 3. Llamar al procedimiento almacenado con 6 parámetros (?)
+        $sql = "CALL sp_crear_usuario_y_rol(?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
 
         if ($stmt) {
-            // Asociamos los parámetros ("ss" significa que ambos son strings/cadenas de texto)
-            $stmt->bind_param("ss", $usuario_nuevo, $password_encriptado);
+            // "ssssss" significa que los 6 parámetros son cadenas de texto (strings)
+            $stmt->bind_param("ssssss", $nombre_rol, $descripcion_rol, $usuario_nuevo, $email_nuevo, $password_plano, $estado_usuario);
 
             // Ejecutamos la consulta
             if ($stmt->execute()) {
-                $mensaje = "<p style='color: green;'>¡Usuario registrado con éxito!<br>Usuario: <b>" . htmlspecialchars($usuario_nuevo) . "</b></p>";
+                $mensaje = "<p style='color: green;'>¡Usuario y rol registrados con éxito!<br>Usuario: <b>" . htmlspecialchars($usuario_nuevo) . "</b></p>";
             } else {
-                $mensaje = "<p style='color: red;'>Error al registrar (quizás el usuario ya exista): " . $stmt->error . "</p>";
+                $mensaje = "<p style='color: red;'>Error al registrar (quizás el email ya exista): " . htmlspecialchars($stmt->error) . "</p>";
             }
             
-            // Cerramos la sentencia
+            // Cerramos la sentencia y limpiamos buffers de procedimientos almacenados en MySQLi
             $stmt->close();
+            while($conn->more_results() && $conn->next_result());
+
         } else {
-            $mensaje = "<p style='color: red;'>Error al preparar la consulta: " . $conn->error . "</p>";
+            $mensaje = "<p style='color: red;'>Error al preparar la consulta: " . htmlspecialchars($conn->error) . "</p>";
         }
     } else {
-        $mensaje = "<p style='color: orange;'>Por favor, completa todos los campos.</p>";
+        $mensaje = "<p style='color: orange;'>Por favor, completa todos los campos obligatorios.</p>";
     }
 }
-
-// Cerramos la conexión a la base de datos
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -53,15 +55,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Usuario</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 50px; }
-        .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { background-color: #2c3e50; color: white; padding: 10px; border: none; width: 100%; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #34495e; }
-    </style>
+    <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
@@ -71,11 +65,22 @@ $conn->close();
     <!-- Mostramos los mensajes de éxito o error -->
     <?php echo $mensaje; ?>
 
-    <!-- Formulario HTML que envía los datos a este mismo archivo mediante POST -->
+    <!-- Formulario HTML actualizado con los campos que exige tu base de datos -->
     <form action="crear_usuario.php" method="POST">
+        
         <div class="form-group">
-            <label for="usuario">Nombre de Usuario:</label>
+            <label for="rol">Rol del Usuario:</label>
+            <input type="text" id="rol" name="rol" placeholder="Ej: Administrador, Empleado, Cliente" required>
+        </div>
+
+        <div class="form-group">
+            <label for="usuario">Nombre Completo:</label>
             <input type="text" id="usuario" name="usuario" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Correo Electrónico:</label>
+            <input type="email" id="email" name="email" required>
         </div>
 
         <div class="form-group">
@@ -83,12 +88,12 @@ $conn->close();
             <input type="password" id="password" name="password" required>
         </div>
 
-        <button type="submit" action="crear_usuario.php">Registrar</button>
+        <button type="submit">Registrar</button>
     </form>
+    
     <a href="login.php">
         <br>
-        <br>
-        <button type="submit">Regresar</button>
+        <button type="button">Regresar</button>
     </a>
 </div>
 

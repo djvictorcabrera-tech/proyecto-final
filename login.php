@@ -7,6 +7,12 @@ require_once 'SessionManager.php';
 $session = new SessionManager();
 $mensaje_error = '';
 
+// Si ya está autenticado, redirigir directamente al menú antes de enviar HTML
+if ($session->estaAutenticado()) {
+    header("Location: menu.php");
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuarioInput  = trim($_POST['usuario'] ?? '');
     $passwordInput = trim($_POST['password'] ?? '');
@@ -15,8 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuario = new Usuario();
 
         if ($usuario->autenticar($usuarioInput, $passwordInput)) {
-            // Guardar en sesión usando el objeto SessionManager
-            $session->iniciarSesion($usuario->getId(), $usuario->getUsuario());
+            // CORREGIDO: Pasamos el ID, el nombre Y el rol al SessionManager
+            $session->iniciarSesion(
+                $usuario->getId(), 
+                $usuario->getUsuario(), 
+                $usuario->getRol()
+            );
+
+            // Redirigir inmediatamente después de iniciar sesión con éxito
+            header("Location: menu.php");
+            exit();
         } else {
             $mensaje_error = "Usuario o contraseña incorrectos.";
         }
@@ -31,34 +45,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Iniciar Sesión</title>
-    <link rel="stylesheet" href="estilo.css">
+    <link rel="stylesheet" href="estilos.css">
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
-        .login-box { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 300px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; padding: 10px; background-color: #007bff; border: none; color: white; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        .error { color: red; margin-bottom: 15px; font-size: 14px; }
-        .exito { color: green; margin-bottom: 15px; font-size: 14px; }
+        
     </style>
 </head>
 <body>
     <div class="login-box">
-        <h2 class="centrado">Iniciar Sesión</h2>
-            <?php if (!empty($mensaje_error)): ?>
-        <div class="error"><?php echo htmlspecialchars($mensaje_error); ?></div>
-            <?php endif; ?>
+        <h2 class="centrado">Acceso Restaurante</h2>
+        
+        <?php if (!empty($mensaje_error)): ?>
+            <div class="error"><?php echo htmlspecialchars($mensaje_error); ?></div>
+        <?php endif; ?>
          
-        <?php if ($session->estaAutenticado()): ?>
-            <div class="exito">
-                ¡Bienvenido, <?php echo htmlspecialchars($session->getUsuarioNombre()); ?>!
-            </div>
-            <?php header("Location: menu.php");
-            exit(); // Detiene la ejecución del script?>
-        <?php else: ?>
-
         <form method="POST" action="login.php">
             <div class="form-group">
                 <label for="usuario">Usuario:</label>
@@ -72,10 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <br>
             <br>
         </form>
-        <a href="crear_usuario.php">
-            <button type="submit">Crear Usuario</button>
-        </a>
-        <?php endif; ?>
     </div>
 </body>
 </html>

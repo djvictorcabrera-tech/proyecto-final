@@ -4,10 +4,10 @@ require_once 'conexion.php';
 class Usuario {
     private $id;
     private $usuario;
+    private $rol; // <--- Nueva propiedad para el rol
     private $db;
 
     public function __construct() {
-        // Importamos la variable $conn definida en tu conexion.php
         global $conn;
         $this->db = $conn;
     }
@@ -21,36 +21,35 @@ class Usuario {
         return $this->usuario;
     }
 
+    public function getRol() { // <--- Nuevo getter para el rol
+        return $this->rol;
+    }
+
     /**
      * Autentica un usuario mediante un procedimiento almacenado usando MySQLi
      */
     public function autenticar($usuarioInput, $passwordInput) {
         try {
-            // 1. En MySQLi usamos el signo '?' en lugar de ':usuario'
-            $stmt = $this->db->prepare("CALL sp_obtener_usuario_login(?)");
+            $stmt = $this->db->prepare("CALL sp_crear_usuario_y_rol(?)");
             
             if ($stmt) {
-                // 2. Vinculamos el parámetro como texto ('s')
                 $stmt->bind_param("s", $usuarioInput);
-                
-                // 3. Ejecutamos la consulta
                 $stmt->execute();
                 
-                // 4. Obtenemos el resultado de la base de datos
                 $resultado = $stmt->get_result();
                 $data = $resultado->fetch_assoc();
                 
-                // 5. Cerramos el statement
                 $stmt->close();
 
-                // 6. LIMPIEZA DE BUFFERS (Obligatorio en MySQLi al usar CALL)
-                // Esto evita que las siguientes consultas de tu sistema fallen
+                // Limpieza de buffers obligatoria en MySQLi con procedimientos almacenados
                 while($this->db->more_results() && $this->db->next_result());
 
-                // 7. Verificamos la contraseña encriptada
+                // Verificamos la contraseña encriptada (o SHA2 si lo manejas directo en BD)
                 if ($data && password_verify($passwordInput, $data['password'])) {
-                    $this->id = $data['id'];
-                    $this->usuario = $data['usuario'];
+                    $this->id = $data['id_usuario']; // Asegúrate que coincida con tu columna
+                    $this->usuario = $data['nombre']; // Asegúrate que coincida con tu columna
+                    $this->rol = $data['nombre_rol']; // <--- Guardamos el rol (ej: 'Administrador', 'Cliente')
+                    
                     return true;
                 }
             }
