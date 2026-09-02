@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Pedidos y Menú Digital Interactivo</title>
+    <title>Gestor de Pedidos</title>
     
     <!-- Carga de fuentes externas desde Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -521,7 +521,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- 4. ESTRUCTURA DE LA INTERFAZ HTML -->
 <div class="app-container">
     <header class="app-header">
-        <h1 class="app-title">Menú Digital</h1>
+        <h1 class="app-title">Menu</h1>
         
         <!-- Muestra dinámica del usuario sanitizada previamente con htmlspecialchars en PHP -->
         <div class="user-center-display">
