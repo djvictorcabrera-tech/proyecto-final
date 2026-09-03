@@ -1,32 +1,34 @@
 <?php
 // 1. INICIALIZACIÓN Y GESTIÓN DE SESIÓN
-// Incluye la clase encargada de manejar la sesión y la instancia para garantizar que la sesión PHP esté activa.
 require_once 'SessionManager.php';
 $session = new SessionManager();
 
-// Captura el nombre del usuario desde la variable súper global $_SESSION.
-// Utiliza el operador de fusión de nulos (??) para evaluar múltiples claves habituales de login ('usuario', 'user_name', etc.).
-// Si ninguna existe, asigna 'Usuario Activo' como valor por defecto.
 $usuarioConectado = $_SESSION['usuario'] ?? $_SESSION['user_name'] ?? $_SESSION['nombre'] ?? $_SESSION['user'] ?? 'Usuario Activo';
+$mesaActiva = $_GET['mesa'] ?? 'MESA 01';
+
+// ---------------- CONEXIÓN A LA BASE DE DATOS ----------------
+$host = '127.0.0.1';
+$dbname = 'gestor_pedidos';
+$username = 'root';
+$password = ''; // Coloca aquí tu contraseña si la tienes
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Error de conexión a la base de datos: " . $e->getMessage());
+}
+// -------------------------------------------------------------
 
 // 2. PROCESAMIENTO DE PETICIONES HTTP POST (RECEPCIÓN DE COMANDAS)
-// Evalúa si la página está recibiendo una solicitud enviada desde JavaScript mediante el método POST.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Configura la cabecera de respuesta para indicarle al cliente que devolverá un formato JSON.
     header('Content-Type: application/json');
-    
-    // Lee el flujo de entrada primario de la petición (payload en JSON enviado via fetch/AJAX).
     $rawInput = file_get_contents('php://input');
-    
-    // Decodifica el JSON recibido y lo convierte en un arreglo asociativo de PHP.
     $data = json_decode($rawInput, true);
 
-    // Verifica que el arreglo devuelto contenga productos en el parámetro 'items'.
     if (!empty($data['items'])) {
-        // Asigna el número de mesa seleccionado o 'MESA 01' en caso de no ser provisto.
         $numMesa = $data['mesa'] ?? 'MESA 01';
         
-        // Retorna una respuesta exitosa codificada en JSON con el mensaje, un ID aleatorio de pedido y la ruta de redirección.
         echo json_encode([
             'status' => 'success',
             'message' => "¡Comanda enviada a cocina exitosamente para la {$numMesa}!",
@@ -34,14 +36,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'redirect' => 'menu_cocina.php'
         ]);
     } else {
-        // Retorna una respuesta de error si el carrito fue enviado vacío.
         echo json_encode([
             'status' => 'error',
             'message' => 'El carrito está vacío.'
         ]);
     }
-    // Finaliza la ejecución del script PHP para evitar renderizar el código HTML dentro de la respuesta AJAX.
     exit;
+}
+
+// 3. OBTENER PLATOS Y BEBIDAS DE LA BD
+$productos_db = [];
+try {
+    // Llamada al procedimiento almacenado
+    $stmt = $pdo->query("CALL sp_obtener_platos_bebidas()");
+    $productos_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
+
+    // Formatear los precios para asegurar que JS los reciba como números y no como texto
+    foreach ($productos_db as &$prod) {
+        $prod['price'] = (float) $prod['price'];
+    }
+} catch (Exception $e) {
+    $error_productos = "Error al cargar el menú: " . $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -51,15 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Pedidos</title>
     
-    <!-- Carga de fuentes externas desde Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         /* 3. HOJA DE ESTILOS CSS */
-        
-        /* Definición de variables CSS globales (Custom Properties) para consistencia de diseño */
         :root {
             --bg-main: #0b111e;
             --bg-card: #151d2a;
@@ -79,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --radius-sm: 6px;
         }
 
-        /* Reseteo general de márgenes, rellenos y modelo de caja */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -87,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
-        /* Bloqueo de desplazamiento general para emular una aplicación web de pantalla completa (POS) */
         html, body {
             width: 100%;
             height: 100%;
@@ -96,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
         }
 
-        /* Contenedor principal ocupando todo el viewport */
         .app-container {
             width: 100vw;
             height: 100vh;
@@ -105,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #111827;
         }
 
-        /* Diseños de cabecera en tres columnas usando Grid (Título, Usuario, Acciones) */
         .app-header {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -124,7 +133,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-transform: uppercase;
         }
 
-        /* Indicador dinámico visual del usuario conectado */
         .user-center-display {
             display: flex;
             align-items: center;
@@ -139,7 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--text-primary);
         }
 
-        /* Punto verde indicador de estado activo/en línea */
         .user-status-dot {
             width: 8px;
             height: 8px;
@@ -187,11 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
-        .table-select option {
-            background-color: var(--bg-sidebar);
-            color: #ffffff;
-        }
-
         .btn-logout {
             background-color: transparent;
             color: var(--color-danger);
@@ -210,7 +212,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
-        /* Disposición principal de 2 columnas: Menú interactivo (izquierda) y Carrito (derecha) */
         .main-layout {
             display: grid;
             grid-template-columns: 1fr 380px;
@@ -258,7 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
         }
 
-        /* Cuadrícula responsiva para las tarjetas de productos */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -349,7 +349,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: scale(1.05);
         }
 
-        /* Estilos del panel lateral (Carrito / Comanda) */
         .order-section {
             background-color: var(--bg-sidebar);
             padding: 32px;
@@ -523,7 +522,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <header class="app-header">
         <h1 class="app-title">Menu</h1>
         
-        <!-- Muestra dinámica del usuario sanitizada previamente con htmlspecialchars en PHP -->
         <div class="user-center-display">
             <span class="user-status-dot"></span>
             <span><?php echo htmlspecialchars($usuarioConectado); ?></span>
@@ -532,15 +530,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="header-actions">
             <div class="table-select-container">
                 <span class="table-select-label">Ubicación:</span>
-                <!-- Selector de mesas; 'MESA 01' configurada con el atributo selected -->
-                <select id="select-mesa" class="table-select">
-                    <option value="MESA 01" selected>MESA 01</option>
-                    <option value="MESA 02">MESA 02</option>
-                    <option value="MESA 03">MESA 03</option>
-                    <option value="MESA 04">MESA 04</option>
-                    <option value="MESA 05">MESA 05</option>
-                    <option value="MESA 06">MESA 06</option>
-                </select>
+                <a href="mesas.php" class="table-select" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    <?php echo htmlspecialchars($mesaActiva); ?>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                </a>
+                <input type="hidden" id="select-mesa" value="<?php echo htmlspecialchars($mesaActiva); ?>">
             </div>
             
             <a href="logout.php" class="btn-logout">Cerrar Sesión</a>
@@ -548,23 +542,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </header>
 
     <div class="main-layout">
-        <!-- Sección izquierda: Selector de categorías y catálogo de productos -->
         <section class="menu-section">
+            <?php if (isset($error_productos)): ?>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; color: var(--color-danger); text-align: center; margin-bottom: 20px;">
+                    <?= $error_productos ?>
+                </div>
+            <?php endif; ?>
+
             <div class="categories-filter">
-                <button class="category-btn active" onclick="filterCategory('hamburguesas', this)">Hamburguesas</button>
+                <button class="category-btn active" onclick="filterCategory('comida', this)">Comida</button>
                 <button class="category-btn" onclick="filterCategory('bebidas', this)">Bebidas</button>
                 <button class="category-btn" onclick="filterCategory('postres', this)">Postres</button>
             </div>
 
-            <!-- Contenedor dinámico donde JavaScript inyectará las tarjetas de productos -->
             <div class="products-grid" id="products-container"></div>
         </section>
 
-        <!-- Sección derecha: Panel de pedido/carrito de compras -->
         <aside class="order-section">
             <div>
                 <h2 class="order-header-title">TU PEDIDO</h2>
-                <!-- Lista dinámica donde JavaScript insertará los productos seleccionados -->
                 <ul class="cart-list" id="cart-items"></ul>
             </div>
 
@@ -581,38 +577,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- 5. LÓGICA DE CLIENTE EN JAVASCRIPT -->
 <script>
-    // Base de datos simulada de productos disponibles en el menú
-    const dbProducts = [
-        { id: 1, name: 'Burger Clásica', desc: 'Carne 180g y cheddar', price: 8.50, category: 'hamburguesas' },
-        { id: 2, name: 'Burger Doble', desc: 'Doble carne y tocino', price: 11.00, category: 'hamburguesas' },
-        { id: 3, name: 'Refresco 500ml', desc: 'Bebida helada', price: 2.00, category: 'bebidas' },
-        { id: 4, name: 'Jugo Natural', desc: 'Sabor a naranja', price: 3.00, category: 'bebidas' },
-        { id: 5, name: 'Helado Sundae', desc: 'Chocolate y galleta', price: 4.50, category: 'postres' }
-    ];
+    // Base de datos inyectada directamente desde PHP a JavaScript
+    const dbProducts = <?php echo json_encode($productos_db); ?>;
 
-    // Arreglo del carrito inicializado totalmente vacío al cargar la vista
     let cart = [];
+    let currentCategory = 'comida';
 
-    // Estado local para la categoría visible actualmente
-    let currentCategory = 'hamburguesas';
-
-    // Función para renderizar dinámicamente los productos según la categoría activa
     function renderProducts() {
         const container = document.getElementById('products-container');
-        container.innerHTML = ''; // Limpia el contenedor antes de dibujar
+        container.innerHTML = ''; 
 
-        // Filtra el arreglo según la categoría activa
+        // Si no hay productos, mostramos un aviso
+        if (dbProducts.length === 0) {
+            container.innerHTML = '<div style="color: var(--text-muted);">No hay productos registrados en la base de datos.</div>';
+            return;
+        }
+
         const filtered = dbProducts.filter(p => p.category === currentCategory);
 
-        // Genera el HTML de cada tarjeta de producto y lo agrega al DOM
         filtered.forEach(p => {
             const card = document.createElement('div');
             card.className = 'product-card';
+            
+            // Validar si existe imagen_url para mostrar la foto o un texto por defecto
+            const imageHtml = p.imagen_url 
+                ? `<img src="${p.imagen_url}" alt="${p.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm);">` 
+                : `Foto`;
+
             card.innerHTML = `
-                <div class="product-thumb">Foto</div>
+                <div class="product-thumb" style="padding: 0; overflow: hidden; background: transparent;">
+                    ${imageHtml}
+                </div>
                 <div class="product-info">
                     <div class="product-title">${p.name}</div>
-                    <div class="product-desc">${p.desc}</div>
+                    <div class="product-desc">${p.desc || ''}</div>
                     <div class="product-price">$${p.price.toFixed(2)}</div>
                 </div>
                 <button class="btn-add" onclick="changeQuantity(${p.id}, 1)">+</button>
@@ -621,40 +619,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     }
 
-    // Función para cambiar de categoría al hacer clic en los botones superiores
     function filterCategory(cat, btn) {
         currentCategory = cat;
-        // Remueve la clase 'active' de todos los botones y se la asigna al seleccionado
         document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         renderProducts();
     }
 
-    // Función central para modificar cantidades o agregar/remover elementos del carrito
     function changeQuantity(productId, delta) {
-        // Busca si el producto ya está dentro del carrito
         const existingIndex = cart.findIndex(item => item.id === productId);
 
         if (existingIndex !== -1) {
-            // Modifica la cantidad actual según el valor recibido (+1 o -1)
             cart[existingIndex].qty += delta;
 
-            // Si la cantidad llega a 0 o menos, elimina el elemento del arreglo
             if (cart[existingIndex].qty <= 0) {
                 cart.splice(existingIndex, 1);
             }
         } else if (delta > 0) {
-            // Si el producto no estaba y se incrementa, se busca en dbProducts y se inserta al carrito
             const prod = dbProducts.find(p => p.id === productId);
             if (prod) {
                 cart.push({ id: prod.id, name: prod.name, qty: 1, price: prod.price });
             }
         }
-        // Actualiza el renderizado del carrito
         renderCart();
     }
 
-    // Función para renderizar la lista del carrito y actualizar totales/botones
     function renderCart() {
         const cartContainer = document.getElementById('cart-items');
         const totalEl = document.getElementById('cart-total');
@@ -663,18 +652,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         cartContainer.innerHTML = '';
         let total = 0;
 
-        // Caso: Carrito sin items
         if (cart.length === 0) {
             cartContainer.innerHTML = '<div class="empty-cart-msg">El carrito está vacío</div>';
-            submitBtn.disabled = true; // Deshabilita el botón de enviar
+            submitBtn.disabled = true; 
         } else {
-            // Caso: Carrito con productos
             submitBtn.disabled = false;
             cart.forEach(item => {
                 const itemTotal = item.price * item.qty;
                 total += itemTotal;
 
-                // Genera el ítem de la lista con botones para incrementar/decrementar
                 const li = document.createElement('li');
                 li.className = 'cart-item';
                 li.innerHTML = `
@@ -692,19 +678,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
-        // Muestra el total acumulado en pantalla
         totalEl.textContent = `$${total.toFixed(2)}`;
     }
 
-    // Función asíncrona para enviar la orden hacia el servidor PHP mediante Fetch API
     async function sendToKitchen() {
         if (cart.length === 0) return;
 
-        // Captura la mesa seleccionada en el elemento <select>
         const mesaSeleccionada = document.getElementById('select-mesa').value;
         const totalCalculated = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-        // Estructura el objeto/payload a transmitir en JSON
         const payload = {
             mesa: mesaSeleccionada,
             items: cart,
@@ -712,19 +694,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         try {
-            // Envía la petición POST al script actual ('menu.php')
             const response = await fetch('menu.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            // Procesa la respuesta JSON emitida por PHP
             const result = await response.json();
             if (result.status === 'success') {
-                cart = []; // Vacía el carrito local tras confirmación
+                cart = []; 
                 renderCart();
-                // Redirige a la vista de cocina especificada en la respuesta
                 window.location.href = result.redirect || 'menu_cocina.php';
             } else {
                 alert(`❌ Error: ${result.message}`);
@@ -735,7 +714,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Evento de inicialización que ejecuta el renderizado inicial al cargar completamente el DOM
     window.addEventListener('DOMContentLoaded', () => {
         renderProducts();
         renderCart();

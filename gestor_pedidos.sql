@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 03-09-2026 a las 17:24:17
+-- Tiempo de generación: 03-09-2026 a las 22:18:49
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -31,6 +31,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `actualizar_estado` (IN `p_id_usuari
     WHERE id_usuario = p_id_usuario;
 END$$
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_estado_mesa` (IN `p_id_mesa` INT, IN `p_estado` ENUM('DISPONIBLE','OCUPADA','RESERVADA'))   BEGIN
+    UPDATE mesas 
+    SET estado = p_estado 
+    WHERE id_mesa = p_id_mesa;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario_y_rol` (IN `p_nombre_rol` VARCHAR(50), IN `p_descripcion_rol` VARCHAR(255), IN `p_nombre_usuario` VARCHAR(100), IN `p_email` VARCHAR(100), IN `p_password_plana` VARCHAR(255), IN `p_estado` ENUM('ACTIVO','INACTIVO'))   BEGIN
     DECLARE v_id_rol INT;
     DECLARE v_password_encriptada VARCHAR(255);
@@ -56,6 +62,24 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario_y_rol` (IN `p_nomb
     INSERT INTO usuarios (id_rol, nombre, email, password, estado)
     VALUES (v_id_rol, p_nombre_usuario, p_email, v_password_encriptada, p_estado);
 
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_mesas` ()   BEGIN
+    SELECT id_mesa, numero_mesa, capacidad, estado 
+    FROM mesas;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_platos_bebidas` ()   BEGIN
+    SELECT 
+        pb.id_producto AS id, 
+        pb.nombre AS name, 
+        pb.descripcion AS `desc`, 
+        pb.precio AS price, 
+        c.nombre AS category,
+        pb.imagen_url
+    FROM platos_bebidas pb
+    INNER JOIN categorias c ON pb.id_categoria = c.id_categoria
+    WHERE pb.disponible = 1; 
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuario_login` (IN `p_input_usuario` VARCHAR(100))   BEGIN
@@ -124,6 +148,18 @@ CREATE TABLE `mesas` (
   `capacidad` int(11) DEFAULT 2,
   `estado` enum('DISPONIBLE','OCUPADA','RESERVADA') DEFAULT 'DISPONIBLE'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `mesas`
+--
+
+INSERT INTO `mesas` (`id_mesa`, `numero_mesa`, `capacidad`, `estado`) VALUES
+(1, '1', 2, 'DISPONIBLE'),
+(2, '2', 2, 'DISPONIBLE'),
+(3, '3', 2, 'DISPONIBLE'),
+(4, '4', 2, 'DISPONIBLE'),
+(5, '5', 2, 'DISPONIBLE'),
+(6, '6', 2, 'DISPONIBLE');
 
 -- --------------------------------------------------------
 
@@ -300,7 +336,7 @@ ALTER TABLE `detalle_pedido`
 -- AUTO_INCREMENT de la tabla `mesas`
 --
 ALTER TABLE `mesas`
-  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `pedidos`
