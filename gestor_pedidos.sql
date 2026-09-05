@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 03-09-2026 a las 22:18:49
--- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Tiempo de generación: 05-09-2026 a las 17:30:10
+-- Versión del servidor: 10.4.28-MariaDB
+-- Versión de PHP: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -80,6 +80,18 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_platos_bebidas` ()   BEG
     FROM platos_bebidas pb
     INNER JOIN categorias c ON pb.id_categoria = c.id_categoria
     WHERE pb.disponible = 1; 
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuarios_con_rol` ()   BEGIN
+    SELECT 
+        u.id_usuario, 
+        u.nombre AS nombre_usuario, 
+        r.nombre AS nombre_rol, 
+        u.email, 
+        u.estado, 
+        u.creado_en
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuario_login` (IN `p_input_usuario` VARCHAR(100))   BEGIN
@@ -259,8 +271,10 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre`, `email`, `password`, `estado`, `creado_en`) VALUES
 (1, 1, 'victor', 'dsjfijs@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-08-29 16:09:48'),
 (2, 2, 'jose', 'suifedk@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-08-29 16:12:51'),
-(3, 3, 'pedro', 'dfdfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'INACTIVO', '2026-08-29 16:14:00'),
-(4, 2, 'ramon', 'jsdfsfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-08-29 16:15:06');
+(3, 3, 'pedro', 'dfdfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-08-29 16:14:00'),
+(4, 2, 'ramon', 'jsdfsfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-08-29 16:15:06'),
+(5, 1, 'raul', 'dfdfdc@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-09-05 14:57:35'),
+(6, 3, 'rafael', 'sdhfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-09-05 15:14:31');
 
 --
 -- Índices para tablas volcadas
@@ -360,7 +374,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Restricciones para tablas volcadas
