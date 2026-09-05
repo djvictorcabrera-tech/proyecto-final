@@ -1,0 +1,64 @@
+/* Contenedor transparente de la tabla */
+.form-container2 {
+    background: rgba(255, 255, 255, 0.5); /* #ffffff80 */
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.form-container2 h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+/* Contenedor para hacer la tabla responsive si es muy ancha */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Estilos de la tabla de usuarios */
+.tabla-usuarios {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+}
+
+.tabla-usuarios thead tr {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tabla-usuarios th, 
+.tabla-usuarios td {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 10px;
+    text-align: left;
+}
+
+.tabla-usuarios tbody tr {
+    background: transparent;
+}
+
+.tabla-usuarios td.mensaje-vacio {
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: center;
+}
+
+/* Botones de acción dentro de la tabla */
+.btn-accion {
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-desactivar {
+    background: #d9534f;
+}
+
+.btn-activar {
+    background: #5cb85c;
+}
