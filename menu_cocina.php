@@ -105,7 +105,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pantalla de Cocina (KDS)</title>
+    <title>Pantalla de Cocina</title>
     
     <meta http-equiv="refresh" content="15">
     
