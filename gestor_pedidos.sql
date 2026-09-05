@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-09-2026 a las 17:30:10
--- Versión del servidor: 10.4.28-MariaDB
--- Versión de PHP: 8.2.4
+-- Tiempo de generación: 06-09-2026 a las 00:59:08
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -35,6 +35,29 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_estado_mesa` (IN `p_i
     UPDATE mesas 
     SET estado = p_estado 
     WHERE id_mesa = p_id_mesa;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_agregar_detalle_pedido` (IN `p_id_pedido` INT, IN `p_id_producto` INT, IN `p_cantidad` INT, IN `p_precio_unitario` DECIMAL(10,2))   BEGIN
+    DECLARE v_subtotal DECIMAL(10,2);
+    
+    -- 1. Calcular el subtotal del producto
+    SET v_subtotal = p_cantidad * p_precio_unitario;
+    
+    -- 2. Insertar la línea de detalle
+    INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario, subtotal)
+    VALUES (p_id_pedido, p_id_producto, p_cantidad, p_precio_unitario, v_subtotal);
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_pedido` (IN `p_id_mesa` INT, IN `p_total` DECIMAL(10,2), OUT `p_id_pedido` INT)   BEGIN
+    -- 1. Insertar el nuevo pedido (el estado por defecto será PENDIENTE)
+    INSERT INTO pedidos (id_mesa, estado, total, creado_en)
+    VALUES (p_id_mesa, 'PENDIENTE', p_total, CURRENT_TIMESTAMP());
+    
+    -- 2. Capturar el ID del pedido recién insertado para retornarlo
+    SET p_id_pedido = LAST_INSERT_ID();
+    
+    -- 3. Actualizar el estado de la mesa correspondiente
+    UPDATE mesas SET estado = 'OCUPADA' WHERE id_mesa = p_id_mesa;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario_y_rol` (IN `p_nombre_rol` VARCHAR(50), IN `p_descripcion_rol` VARCHAR(255), IN `p_nombre_usuario` VARCHAR(100), IN `p_email` VARCHAR(100), IN `p_password_plana` VARCHAR(255), IN `p_estado` ENUM('ACTIVO','INACTIVO'))   BEGIN
@@ -148,6 +171,54 @@ CREATE TABLE `detalle_pedido` (
   `notas` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `detalle_pedido`
+--
+
+INSERT INTO `detalle_pedido` (`id_detalle`, `id_pedido`, `id_producto`, `cantidad`, `precio_unitario`, `subtotal`, `notas`) VALUES
+(1, 1, 3, 1, 2.00, 2.00, NULL),
+(2, 1, 6, 1, 4.00, 4.00, NULL),
+(3, 2, 3, 1, 2.00, 2.00, NULL),
+(4, 2, 6, 1, 4.00, 4.00, NULL),
+(5, 3, 13, 1, 1.00, 1.00, NULL),
+(6, 3, 11, 1, 1.50, 1.50, NULL),
+(7, 4, 3, 1, 2.00, 2.00, NULL),
+(8, 5, 3, 1, 2.00, 2.00, NULL),
+(9, 5, 6, 1, 4.00, 4.00, NULL),
+(10, 6, 3, 1, 2.00, 2.00, NULL),
+(11, 7, 3, 1, 2.00, 2.00, NULL),
+(12, 8, 3, 1, 2.00, 2.00, NULL),
+(13, 9, 3, 1, 2.00, 2.00, NULL),
+(14, 10, 6, 1, 4.00, 4.00, NULL),
+(15, 11, 6, 1, 4.00, 4.00, NULL),
+(16, 12, 1, 3, 1.50, 4.50, NULL),
+(17, 13, 6, 1, 4.00, 4.00, NULL),
+(18, 14, 3, 1, 2.00, 2.00, NULL),
+(19, 15, 6, 1, 4.00, 4.00, NULL),
+(20, 16, 2, 1, 4.00, 4.00, NULL),
+(21, 17, 1, 3, 1.50, 4.50, NULL),
+(22, 17, 2, 3, 4.00, 12.00, NULL),
+(23, 18, 3, 1, 2.00, 2.00, NULL),
+(24, 18, 6, 1, 4.00, 4.00, NULL),
+(25, 19, 3, 3, 2.00, 6.00, NULL),
+(26, 20, 1, 1, 1.50, 1.50, NULL),
+(27, 21, 2, 1, 4.00, 4.00, NULL),
+(28, 21, 5, 1, 1.50, 1.50, NULL),
+(29, 22, 3, 1, 2.00, 2.00, NULL),
+(30, 23, 6, 1, 4.00, 4.00, NULL),
+(31, 24, 8, 1, 5.00, 5.00, NULL),
+(32, 25, 1, 1, 1.50, 1.50, NULL),
+(33, 26, 3, 1, 2.00, 2.00, NULL),
+(34, 27, 2, 1, 4.00, 4.00, NULL),
+(35, 27, 20, 1, 1.50, 1.50, NULL),
+(36, 27, 13, 1, 1.00, 1.00, NULL),
+(37, 28, 3, 1, 2.00, 2.00, NULL),
+(38, 28, 2, 1, 4.00, 4.00, NULL),
+(39, 28, 5, 1, 1.50, 1.50, NULL),
+(40, 29, 3, 3, 2.00, 6.00, NULL),
+(41, 30, 6, 1, 4.00, 4.00, NULL),
+(42, 30, 3, 1, 2.00, 2.00, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -186,6 +257,42 @@ CREATE TABLE `pedidos` (
   `total` decimal(10,2) DEFAULT 0.00,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `pedidos`
+--
+
+INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `estado`, `total`, `creado_en`) VALUES
+(1, 1, 'ENTREGADO', 6.00, '2026-09-05 15:38:10'),
+(2, 1, 'ENTREGADO', 6.00, '2026-09-05 15:40:46'),
+(3, 5, 'ENTREGADO', 2.50, '2026-09-05 15:41:11'),
+(4, 4, 'ENTREGADO', 2.00, '2026-09-05 15:43:30'),
+(5, 4, 'ENTREGADO', 6.00, '2026-09-05 15:50:18'),
+(6, 4, 'ENTREGADO', 2.00, '2026-09-05 16:00:41'),
+(7, 1, 'ENTREGADO', 2.00, '2026-09-05 16:00:52'),
+(8, 1, 'ENTREGADO', 2.00, '2026-09-05 16:07:11'),
+(9, 1, 'ENTREGADO', 2.00, '2026-09-05 16:08:26'),
+(10, 1, 'ENTREGADO', 4.00, '2026-09-05 16:09:18'),
+(11, 1, 'ENTREGADO', 4.00, '2026-09-05 16:13:11'),
+(12, 1, 'ENTREGADO', 4.50, '2026-09-05 16:13:55'),
+(13, 1, 'ENTREGADO', 4.00, '2026-09-05 16:14:20'),
+(14, 1, 'ENTREGADO', 2.00, '2026-09-05 16:15:17'),
+(15, 1, 'ENTREGADO', 4.00, '2026-09-05 16:15:42'),
+(16, 1, 'ENTREGADO', 4.00, '2026-09-05 16:16:08'),
+(17, 1, 'ENTREGADO', 16.50, '2026-09-05 16:27:35'),
+(18, 1, 'ENTREGADO', 6.00, '2026-09-05 16:27:38'),
+(19, 1, 'ENTREGADO', 6.00, '2026-09-05 16:30:52'),
+(20, 1, 'ENTREGADO', 1.50, '2026-09-05 16:31:11'),
+(21, 1, 'ENTREGADO', 5.50, '2026-09-05 16:31:47'),
+(22, 1, 'ENTREGADO', 2.00, '2026-09-05 16:31:49'),
+(23, 1, 'ENTREGADO', 4.00, '2026-09-05 16:31:51'),
+(24, 1, 'ENTREGADO', 5.00, '2026-09-05 16:31:54'),
+(25, 1, 'ENTREGADO', 1.50, '2026-09-05 16:40:15'),
+(26, 1, 'ENTREGADO', 2.00, '2026-09-05 16:40:26'),
+(27, 5, 'ENTREGADO', 6.50, '2026-09-05 16:41:48'),
+(28, 4, 'ENTREGADO', 7.50, '2026-09-05 16:42:38'),
+(29, 6, 'ENTREGADO', 6.00, '2026-09-05 16:44:04'),
+(30, 6, 'ENTREGADO', 6.00, '2026-09-05 16:44:17');
 
 -- --------------------------------------------------------
 
@@ -344,7 +451,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT de la tabla `mesas`
@@ -356,7 +463,7 @@ ALTER TABLE `mesas`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT de la tabla `platos_bebidas`

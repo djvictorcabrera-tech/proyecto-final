@@ -26,19 +26,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
     $data = json_decode($rawInput, true);
 
-    if (!empty($data['items'])) {
-        $numMesa = $data['mesa'] ?? 'MESA 01';
-        
-        echo json_encode([
-            'status' => 'success',
-            'message' => "¡Comanda enviada a cocina exitosamente para la {$numMesa}!",
-            'order_id' => rand(1000, 9999),
-            'redirect' => 'menu_cocina.php'
-        ]);
+    if (!empty($data['items'])) { // Verifica que el carrito no esté vacío
+        try {
+            // Iniciar transacción para asegurar que ambos SP se ejecuten correctamente
+            $pdo->beginTransaction();
+
+            // Extraer el ID numérico de la mesa (filtra texto como "MESA 01" dejando solo "1")
+            $idMesa = (int) filter_var($data['mesa'], FILTER_SANITIZE_NUMBER_INT);
+            if ($idMesa === 0) $idMesa = 1; // Fallback por seguridad
+            
+            $totalPedido = (float) $data['total'];
+
+            // 1. Crear el pedido principal llamando a sp_crear_pedido
+            $stmt = $pdo->prepare("CALL sp_crear_pedido(:id_mesa, :total, @p_id_pedido)");
+            $stmt->bindParam(':id_mesa', $idMesa, PDO::PARAM_INT);
+            $stmt->bindParam(':total', $totalPedido, PDO::PARAM_STR);
+            $stmt->execute();
+            $stmt->closeCursor();
+
+            // 2. Recuperar el ID del pedido (order_id) generado por la variable de salida (OUT)
+            $result = $pdo->query("SELECT @p_id_pedido AS id_pedido")->fetch(PDO::FETCH_ASSOC);
+            $idPedidoGenerado = $result['id_pedido'];
+
+            // 3. Preparar el llamado para insertar los detalles del carrito
+            $stmtDetalle = $pdo->prepare("CALL sp_agregar_detalle_pedido(:id_pedido, :id_producto, :cantidad, :precio)");
+            
+            foreach ($data['items'] as $item) { // Itera sobre cada producto del carrito[cite: 2]
+                $idProducto = (int) $item['id'];
+                $cantidad = (int) $item['qty'];
+                $precio = (float) $item['price'];
+
+                $stmtDetalle->bindParam(':id_pedido', $idPedidoGenerado, PDO::PARAM_INT);
+                $stmtDetalle->bindParam(':id_producto', $idProducto, PDO::PARAM_INT);
+                $stmtDetalle->bindParam(':cantidad', $cantidad, PDO::PARAM_INT);
+                $stmtDetalle->bindParam(':precio', $precio, PDO::PARAM_STR);
+                $stmtDetalle->execute();
+                $stmtDetalle->closeCursor();
+            }
+
+            // Confirmar transacción si todo salió bien
+            $pdo->commit();
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => "¡Comanda #{$idPedidoGenerado} enviada a cocina exitosamente!",
+                'order_id' => $idPedidoGenerado,
+                'redirect' => 'menu_cocina.php' // Redirige a cocina según tu lógica original[cite: 2]
+            ]);
+        } catch (Exception $e) {
+            // Revertir cambios en la base de datos si ocurre un error
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Error en la base de datos: ' . $e->getMessage()
+            ]);
+        }
     } else {
         echo json_encode([
             'status' => 'error',
-            'message' => 'El carrito está vacío.'
+            'message' => 'El carrito está vacío.' // Mensaje de error si no hay items[cite: 2]
         ]);
     }
     exit;
@@ -76,25 +124,30 @@ try {
 
 <!-- 4. ESTRUCTURA DE LA INTERFAZ HTML -->
 <div class="app-container">
-    <header class="app-header">
-        <h1 class="app-title">Menu</h1>
-        
+        <header class="app-header">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <h1 class="app-title">Menu</h1>
+            <a href="menu_cocina.php" style="background-color: #3b82f6; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: background-color 0.2s;">
+            Cocina
+            </a>
+         </div>
+    
         <div class="user-center-display">
-            <span class="user-status-dot"></span>
-            <span><?php echo htmlspecialchars($usuarioConectado); ?></span>
+        <span class="user-status-dot"></span>
+        <span><?php echo htmlspecialchars($usuarioConectado); ?></span>
         </div>
 
-        <div class="header-actions">
-            <div class="table-select-container">
-                <span class="table-select-label">Ubicación:</span>
-                <a href="mesas.php" class="table-select" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    <?php echo htmlspecialchars($mesaActiva); ?>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
-                </a>
-                <input type="hidden" id="select-mesa" value="<?php echo htmlspecialchars($mesaActiva); ?>">
-            </div>
-            
-            <a href="logout.php" class="btn-logout">Cerrar Sesión</a>
+    <div class="header-actions">
+        <div class="table-select-container">
+            <span class="table-select-label">Ubicación:</span>
+            <a href="mesas.php" class="table-select" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <?php echo htmlspecialchars($mesaActiva); ?>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </a>
+            <input type="hidden" id="select-mesa" value="<?php echo htmlspecialchars($mesaActiva); ?>">
+        </div>
+        
+        <a href="logout.php" class="btn-logout">Cerrar Sesión</a>
         </div>
     </header>
 

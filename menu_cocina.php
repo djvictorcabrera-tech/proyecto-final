@@ -1,37 +1,114 @@
 <?php
-session_start();
+// 1. GESTIÓN DE SESIÓN
+require_once 'SessionManager.php';
+$session = new SessionManager();
 
-// Cargar comanda estática si la sesión está vacía
-if (!isset($_SESSION['comandas_cocina'])) {
-    $_SESSION['comandas_cocina'] = [];
+// ---------------- CONEXIÓN A LA BASE DE DATOS ----------------
+$host = '127.0.0.1';
+$dbname = 'gestor_pedidos';
+$username = 'root';
+$password = ''; 
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Error de conexión a la base de datos: " . $e->getMessage());
 }
+// -------------------------------------------------------------
 
-// Acción de responder a AJAX para marcar como LISTO
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true);
+// 2. PROCESAR ACCIÓN DE DESPACHAR PEDIDO, LIBERAR MESA Y REDIRIGIR A FACTURA
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'completar_pedido') {
+    $idPedidoCompletar = (int) $_POST['id_pedido'];
+    
+    try {
+        // Iniciar transacción para asegurar que ambas actualizaciones se ejecuten correctamente
+        $pdo->beginTransaction();
 
-    if (isset($data['action']) && $data['action'] === 'marcar_listo' && isset($data['id'])) {
-        $orderId = $data['id'];
-        $_SESSION['comandas_cocina'] = array_filter($_SESSION['comandas_cocina'], function($item) use ($orderId) {
-            return $item['id'] != $orderId;
-        });
-        $_SESSION['comandas_cocina'] = array_values($_SESSION['comandas_cocina']);
+        // 1. Obtener la mesa asociada a este pedido antes de actualizarlo
+        $stmtMesa = $pdo->prepare("SELECT id_mesa FROM pedidos WHERE id_pedido = :id_pedido");
+        $stmtMesa->execute([':id_pedido' => $idPedidoCompletar]);
+        $pedidoData = $stmtMesa->fetch(PDO::FETCH_ASSOC);
 
-        echo json_encode(['status' => 'success', 'remaining' => count($_SESSION['comandas_cocina'])]);
+        // 2. Cambiar el estado del pedido a 'ENTREGADO'
+        $stmtUpdatePedido = $pdo->prepare("UPDATE pedidos SET estado = 'ENTREGADO' WHERE id_pedido = :id_pedido");
+        $stmtUpdatePedido->execute([':id_pedido' => $idPedidoCompletar]);
+
+        // 3. Liberar la mesa cambiando su estado a 'DISPONIBLE'
+        if ($pedidoData && isset($pedidoData['id_mesa'])) {
+            $stmtUpdateMesa = $pdo->prepare("UPDATE mesas SET estado = 'DISPONIBLE' WHERE id_mesa = :id_mesa");
+            $stmtUpdateMesa->execute([':id_mesa' => $pedidoData['id_mesa']]);
+        }
+
+        // Confirmar los cambios en la base de datos
+        $pdo->commit();
+
+        // Redirigir a la factura del pedido entregado
+        header("Location: factura.php?id_pedido=" . $idPedidoCompletar);
         exit;
+
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        die("Error al procesar el despacho: " . $e->getMessage());
     }
 }
 
-$comandas = $_SESSION['comandas_cocina'];
+// 3. CONSULTAR ÚNICAMENTE PEDIDOS ACTIVOS EN COCINA (PENDIENTE / EN_PREPARACION)
+$pedidos = [];
+try {
+    $sql = "SELECT 
+                p.id_pedido,
+                m.numero_mesa,
+                p.estado,
+                p.creado_en,
+                TIMESTAMPDIFF(MINUTE, p.creado_en, NOW()) AS minutos_transcurridos,
+                dp.cantidad,
+                dp.notas,
+                pb.nombre AS producto
+            FROM pedidos p
+            INNER JOIN mesas m ON p.id_mesa = m.id_mesa
+            INNER JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
+            INNER JOIN platos_bebidas pb ON dp.id_producto = pb.id_producto
+            WHERE p.estado IN ('PENDIENTE', 'EN_PREPARACION')
+            ORDER BY p.creado_en ASC";
+
+    $stmt = $pdo->query($sql);
+    $rawOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Agrupar los ítems por cada ID de pedido
+    foreach ($rawOrders as $row) {
+        $id = $row['id_pedido'];
+        if (!isset($pedidos[$id])) {
+            $pedidos[$id] = [
+                'id_pedido' => $id,
+                'numero_mesa' => $row['numero_mesa'],
+                'estado' => $row['estado'],
+                'creado_en' => $row['creado_en'],
+                'minutos_transcurridos' => (int) $row['minutos_transcurridos'],
+                'items' => []
+            ];
+        }
+        $pedidos[$id]['items'][] = [
+            'cantidad' => $row['cantidad'],
+            'producto' => $row['producto'],
+            'notas' => $row['notas']
+        ];
+    }
+} catch (Exception $e) {
+    $error_kds = "Error al obtener comandas: " . $e->getMessage();
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cocina</title>
+    <title>Pantalla de Cocina (KDS)</title>
+    
+    <meta http-equiv="refresh" content="15">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -40,127 +117,64 @@ $comandas = $_SESSION['comandas_cocina'];
 <body>
 
 <div class="app-container">
-    <!-- Header Bar -->
     <header class="app-header">
         <div class="header-title-container">
-            <h1 class="app-title">Cocina</h1>
-            <div class="header-stats">Pedidos Activos: <span id="active-count"><?php echo count($comandas); ?></span></div>
+            <h1 class="app-title">COCINA</h1>
+            <div class="header-stats">PEDIDOS ACTIVOS: <?= count($pedidos) ?></div>
         </div>
         <a href="menu.php" class="btn-back">← Volver al Menú</a>
     </header>
 
-    <!-- KDS Display -->
-    <main class="kds-container">
-        <div class="kds-grid" id="kds-grid">
-            <?php if (empty($comandas)): ?>
-                <div class="empty-kds">
-                    ✨ No hay pedidos pendientes en la cocina.
-                </div>
+    <div class="kds-container">
+        <div class="kds-grid">
+            <?php if (!empty($error_kds)): ?>
+                <div class="empty-kds" style="color: var(--color-urgent);"><?= $error_kds ?></div>
+            <?php elseif (empty($pedidos)): ?>
+                <div class="empty-kds">No hay pedidos pendientes en cocina.</div>
             <?php else: ?>
-                <?php foreach ($comandas as $c): 
-                    // Cálculo de minutos transcurridos
-                    $minutos = floor((time() - strtotime($c['tiempo'])) / 60);
-                    if ($minutos < 0) $minutos = 0;
+                <?php foreach ($pedidos as $pedido): 
+                    $minutosTranscurridos = max(0, $pedido['minutos_transcurridos']);
 
-                    $statusClass = 'normal';
-                    if ($minutos >= 10) {
-                        $statusClass = 'urgent';
-                    } elseif ($minutos >= 5) {
-                        $statusClass = 'warning';
+                    $claseUrgencia = 'normal';
+                    if ($minutosTranscurridos >= 10) {
+                        $claseUrgencia = 'urgent';
+                    } elseif ($minutosTranscurridos >= 5) {
+                        $claseUrgencia = 'warning';
                     }
                 ?>
-                <div class="order-card <?php echo $statusClass; ?>" id="order-card-<?php echo $c['id']; ?>">
-                    <div>
+                    <div class="order-card <?= $claseUrgencia ?>">
                         <div class="order-card-header">
-                            <span class="table-name"><?php echo htmlspecialchars($c['mesa']); ?></span>
-                            <span class="time-badge" data-timestamp="<?php echo strtotime($c['tiempo']); ?>">
-                                Hace <?php echo $minutos; ?> min
-                            </span>
+                            <span class="table-name">MESA <?= htmlspecialchars($pedido['numero_mesa']) ?> <small style="font-size:0.8rem; font-weight:normal; opacity:0.8;">(#<?= $pedido['id_pedido'] ?>)</small></span>
+                            <span class="time-badge"><?= $minutosTranscurridos ?> MIN</span>
                         </div>
+
                         <div class="order-card-body">
                             <ul class="items-list">
-                                <?php foreach ($c['items'] as $item): ?>
+                                <?php foreach ($pedido['items'] as $item): ?>
                                     <li class="item-row">
-                                        • <span class="item-qty"><?php echo $item['qty']; ?>x</span> 
-                                        <strong><?php echo htmlspecialchars($item['name']); ?></strong>
-                                        <?php if (!empty($item['note'])): ?>
-                                            <span class="item-note">- <?php echo htmlspecialchars($item['note']); ?></span>
+                                        <span class="item-qty"><?= $item['cantidad'] ?>x</span>
+                                        <?= htmlspecialchars($item['producto']) ?>
+                                        <?php if (!empty($item['notas'])): ?>
+                                            <span class="item-note"><?= htmlspecialchars($item['notas']) ?></span>
                                         <?php endif; ?>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
-                    </div>
 
-                    <div class="order-card-footer">
-                        <button class="btn-complete" onclick="marcarListo(<?php echo $c['id']; ?>)">Marcar Listo</button>
+                        <div class="order-card-footer">
+                            <form method="POST" action="menu_cocina.php">
+                                <input type="hidden" name="action" value="completar_pedido">
+                                <input type="hidden" name="id_pedido" value="<?= $pedido['id_pedido'] ?>">
+                                <button type="submit" class="btn-complete">Despachar Pedido</button>
+                            </form>
+                        </div>
                     </div>
-                </div>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
-    </main>
+    </div>
 </div>
-
-<script>
-    // Marcar orden como lista vía AJAX
-    async function marcarListo(orderId) {
-        const card = document.getElementById(`order-card-${orderId}`);
-        if (card) {
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.9)';
-        }
-
-        try {
-            const response = await fetch('cocina.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'marcar_listo', id: orderId })
-            });
-
-            const result = await response.json();
-            if (result.status === 'success') {
-                setTimeout(() => {
-                    if (card) card.remove();
-                    document.getElementById('active-count').textContent = result.remaining;
-
-                    if (result.remaining === 0) {
-                        document.getElementById('kds-grid').innerHTML = `
-                            <div class="empty-kds">✨ No hay comandas pendientes en cocina.</div>
-                        `;
-                    }
-                }, 300);
-            }
-        } catch (error) {
-            console.error('Error al actualizar el estado de la comanda:', error);
-            if (card) {
-                card.style.opacity = '1';
-                card.style.transform = 'none';
-            }
-        }
-    }
-
-    // Actualización de tiempos en tiempo real
-    setInterval(() => {
-        const badges = document.querySelectorAll('.time-badge[data-timestamp]');
-        const now = Math.floor(Date.now() / 1000);
-
-        badges.forEach(badge => {
-            const timestamp = parseInt(badge.getAttribute('data-timestamp'));
-            const elapsedMinutes = Math.floor((now - timestamp) / 60);
-            badge.textContent = `Hace ${elapsedMinutes} min`;
-
-            const card = badge.closest('.order-card');
-            if (elapsedMinutes >= 10) {
-                card.className = 'order-card urgent';
-            } else if (elapsedMinutes >= 5) {
-                card.className = 'order-card warning';
-            } else {
-                card.className = 'order-card normal';
-            }
-        });
-    }, 30000); // Actualiza cada 30 segundos
-</script>
 
 </body>
 </html>
