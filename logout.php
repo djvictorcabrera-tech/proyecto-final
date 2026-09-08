@@ -1,16 +1,22 @@
 <?php
+/**
+ * ARCHIVO: logout.php
+ * PROPÓSITO: Destruir completamente la sesión activa del usuario y desvincular cookies asociadas.
+ */
+
 require_once 'SessionManager.php';
 
 $session = new SessionManager();
 
-// Si tu SessionManager tiene un método como cerrarSesion() o destruirSesion(), úsalo aquí.
-// Ejemplo: $session->cerrarSesion();
-
-// Garantizar la destrucción manual si no hay método expuesto:
+// Asegurar el inicio de sesión para su destrucción completa
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Vaciar todas las variables globales de $_SESSION
 $_SESSION = array();
+
+// Eliminar la cookie de sesión del navegador si está configurada
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -18,9 +24,11 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+
+// Destruir la sesión en el servidor
 session_destroy();
 
-// Redirigir al inicio de sesión
+// Redirigir a la pantalla de login
 header("Location: login.php");
 exit();
 ?>

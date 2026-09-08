@@ -1,5 +1,10 @@
 <?php
-// Incluir el archivo de conexión
+/**
+ * ARCHIVO: login.php
+ * PROPÓSITO: Controlar el acceso al sistema mediante autenticación de credenciales y redirección por rol.
+ */
+
+// Incluir dependencias base
 require_once 'conexion.php';
 require_once 'usuario.php';
 require_once 'SessionManager.php';
@@ -7,27 +12,30 @@ require_once 'SessionManager.php';
 $session = new SessionManager();
 $mensaje_error = '';
 
-// Si ya está autenticado, redirigir directamente al menú antes de enviar HTML
+// Si el usuario ya está autenticado, redirigir directamente al menú principal
 if ($session->estaAutenticado()) {
     header("Location: menu.php");
     exit();
 }
 
+// Procesar el envío de credenciales mediante el formulario HTTP POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usuarioInput  = trim($_POST['usuario'] ?? '');
     $passwordInput = trim($_POST['password'] ?? '');
 
     if (!empty($usuarioInput) && !empty($passwordInput)) {
-        $usuarioObj = new Usuario(); // Usamos un nombre claro para el objeto
+        $usuarioObj = new Usuario();
 
+        // Validar credenciales contra el modelo de datos
         if ($usuarioObj->autenticar($usuarioInput, $passwordInput)) {
+            // Guardar datos en la sesión activa
             $session->iniciarSesion(
                 $usuarioObj->getId(), 
                 $usuarioObj->getUsuario(), 
                 $usuarioObj->getRol()
             );
 
-            // Redirección según rol
+            // Redireccionar al panel de administración si el rol es Administrador, de lo contrario al Menú
             if ($usuarioObj->getRol() === 'administrador') {
                 header("Location: crear_usuario.php");
                 exit();
@@ -36,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
         } else {
-            // Muestra el mensaje específico configurado en la clase (ej: "Su usuario se encuentra inactivo")
+            // Capturar el mensaje de error específico definido en la clase Usuario
             $mensaje_error = $usuarioObj->getErrorMensaje();
         }
     } else {
@@ -51,13 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Iniciar Sesión</title>
     <link rel="stylesheet" href="estilos.css">
-    <style>
-        
-    </style>
+    <link rel="stylesheet" href="normalize.css">
 </head>
 <body>
     <div class="login-box">
-        <h2 class="centrado, form-group">Acceso Restaurante</h2>
+        <h2 class="centrado form-group">Acceso Restaurante</h2>
         
         <?php if (!empty($mensaje_error)): ?>
             <div class="error"><?php echo htmlspecialchars($mensaje_error); ?></div>
@@ -73,8 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" id="password" name="password" required>
             </div>
             <button type="submit">Ingresar</button>
-            <br>
-            <br>
+            <br><br>
         </form>
     </div>
 </body>

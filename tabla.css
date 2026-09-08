@@ -1,11 +1,17 @@
+/**
+ * ARCHIVO: tabla.css
+ * DESCRIPCIÓN: Estilos para la tabla CRUD de administración de usuarios, roles y permisos.
+ */
+
 /* Contenedor transparente de la tabla */
 .form-container2 {
-    background: rgba(255, 255, 255, 0.5); /* #ffffff80 */
-    backdrop-filter: blur(5px);
+    background-color: #ffffff80; 
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    margin-top: 30px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-container2 h3 {
@@ -13,7 +19,7 @@
     color: #333;
 }
 
-/* Contenedor para hacer la tabla responsive si es muy ancha */
+/* Contenedor con barra de desplazamiento horizontal para pantallas reducidas */
 .table-responsive {
     overflow-x: auto;
 }
@@ -31,7 +37,7 @@
 
 .tabla-usuarios th, 
 .tabla-usuarios td {
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.15);
     padding: 10px;
     text-align: left;
 }
@@ -46,19 +52,58 @@
     text-align: center;
 }
 
-/* Botones de acción dentro de la tabla */
+/* Botones de acción dentro de las celdas de la tabla */
 .btn-accion {
     color: white;
     border: none;
     padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
+    width: auto; /* Anula el width: 100% de la regla global de botones */
 }
 
 .btn-desactivar {
-    background: #d9534f;
+    background: #4f5dd9; /* Azul / Morado para desactivar cuenta */
 }
 
 .btn-activar {
-    background: #5cb85c;
+    background: #5cb85c; /* Verde para activar cuenta */
+}
+
+/* Contenedor flexible para alinear los botones en horizontal */
+.acciones-contenedor {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px; /* Espaciado horizontal entre botones */
+    justify-content: center;
+}
+
+/* Previene saltos de línea innecesarios en formularios inline */
+.acciones-contenedor form {
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+}
+
+/* Estilo para el botón de eliminación definitiva */
+.btn-eliminar {
+    background-color: #dc3545;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-eliminar:hover {
+    background-color: #c82333;
+}
+
+/* Garantiza un ancho mínimo en la columna de acciones */
+.tabla-usuarios th:last-child,
+.tabla-usuarios td:last-child {
+    min-width: 200px;
+    text-align: center;
 }

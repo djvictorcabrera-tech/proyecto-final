@@ -1,101 +1,75 @@
 <?php
-// 1. GESTIÓN DE SESIÓN
+/**
+ * ARCHIVO: menu_cocina.php (Kitchen Display System - KDS)
+ * PROPÓSITO: Pantalla de comandas activas para la cocina. Muestra tiempos de espera y permite despachar pedidos.
+ */
+
 require_once 'SessionManager.php';
+require_once 'conexion.php';
+
 $session = new SessionManager();
 
-// ---------------- CONEXIÓN A LA BASE DE DATOS ----------------
-$host = '127.0.0.1';
-$dbname = 'gestor_pedidos';
-$username = 'root';
-$password = ''; 
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Error de conexión a la base de datos: " . $e->getMessage());
-}
-// -------------------------------------------------------------
-
-// 2. PROCESAR ACCIÓN DE DESPACHAR PEDIDO, LIBERAR MESA Y REDIRIGIR A FACTURA
+// 1. DESPACHAR PEDIDO Y REDIRIGIR A FACTURA
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'completar_pedido') {
     $idPedidoCompletar = (int) $_POST['id_pedido'];
     
     try {
-        // Iniciar transacción para asegurar que ambas actualizaciones se ejecuten correctamente
-        $pdo->beginTransaction();
+        // Ejecución de sp_completar_y_despachar_pedido
+        $stmt = $conn->prepare("CALL sp_completar_y_despachar_pedido(?)");
+        if ($stmt) {
+            $stmt->bind_param("i", $idPedidoCompletar);
+            $stmt->execute();
+            $stmt->close();
 
-        // 1. Obtener la mesa asociada a este pedido antes de actualizarlo
-        $stmtMesa = $pdo->prepare("SELECT id_mesa FROM pedidos WHERE id_pedido = :id_pedido");
-        $stmtMesa->execute([':id_pedido' => $idPedidoCompletar]);
-        $pedidoData = $stmtMesa->fetch(PDO::FETCH_ASSOC);
+            while ($conn->more_results() && $conn->next_result()) {
+                if ($result = $conn->store_result()) { $result->free(); }
+            }
 
-        // 2. Cambiar el estado del pedido a 'ENTREGADO'
-        $stmtUpdatePedido = $pdo->prepare("UPDATE pedidos SET estado = 'ENTREGADO' WHERE id_pedido = :id_pedido");
-        $stmtUpdatePedido->execute([':id_pedido' => $idPedidoCompletar]);
-
-        // 3. Liberar la mesa cambiando su estado a 'DISPONIBLE'
-        if ($pedidoData && isset($pedidoData['id_mesa'])) {
-            $stmtUpdateMesa = $pdo->prepare("UPDATE mesas SET estado = 'DISPONIBLE' WHERE id_mesa = :id_mesa");
-            $stmtUpdateMesa->execute([':id_mesa' => $pedidoData['id_mesa']]);
+            // Redirección directa al comprobante de pago
+            header("Location: factura.php?id_pedido=" . $idPedidoCompletar);
+            exit;
+        } else {
+            throw new Exception($conn->error);
         }
-
-        // Confirmar los cambios en la base de datos
-        $pdo->commit();
-
-        // Redirigir a la factura del pedido entregado
-        header("Location: factura.php?id_pedido=" . $idPedidoCompletar);
-        exit;
-
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
         die("Error al procesar el despacho: " . $e->getMessage());
     }
 }
 
-// 3. CONSULTAR ÚNICAMENTE PEDIDOS ACTIVOS EN COCINA (PENDIENTE / EN_PREPARACION)
+// 2. CONSULTAR COMANDAS ACTIVAS EN COCINA
 $pedidos = [];
 try {
-    $sql = "SELECT 
-                p.id_pedido,
-                m.numero_mesa,
-                p.estado,
-                p.creado_en,
-                TIMESTAMPDIFF(MINUTE, p.creado_en, NOW()) AS minutos_transcurridos,
-                dp.cantidad,
-                dp.notas,
-                pb.nombre AS producto
-            FROM pedidos p
-            INNER JOIN mesas m ON p.id_mesa = m.id_mesa
-            INNER JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
-            INNER JOIN platos_bebidas pb ON dp.id_producto = pb.id_producto
-            WHERE p.estado IN ('PENDIENTE', 'EN_PREPARACION')
-            ORDER BY p.creado_en ASC";
+    $result = $conn->query("CALL sp_obtener_pedidos_activos_cocina()");
 
-    $stmt = $pdo->query($sql);
-    $rawOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Agrupar los ítems por cada ID de pedido
-    foreach ($rawOrders as $row) {
-        $id = $row['id_pedido'];
-        if (!isset($pedidos[$id])) {
-            $pedidos[$id] = [
-                'id_pedido' => $id,
-                'numero_mesa' => $row['numero_mesa'],
-                'estado' => $row['estado'],
-                'creado_en' => $row['creado_en'],
-                'minutos_transcurridos' => (int) $row['minutos_transcurridos'],
-                'items' => []
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $id = $row['id_pedido'];
+            // Agrupar ítems bajo la misma comanda/pedido
+            if (!isset($pedidos[$id])) {
+                $pedidos[$id] = [
+                    'id_pedido' => $id,
+                    'numero_mesa' => $row['numero_mesa'],
+                    'estado' => $row['estado'],
+                    'creado_en' => $row['creado_en'],
+                    'minutos_transcurridos' => (int) $row['minutos_transcurridos'],
+                    'items' => []
+                ];
+            }
+            $pedidos[$id]['items'][] = [
+                'cantidad' => $row['cantidad'],
+                'producto' => $row['producto'],
+                'notas' => $row['notas']
             ];
         }
-        $pedidos[$id]['items'][] = [
-            'cantidad' => $row['cantidad'],
-            'producto' => $row['producto'],
-            'notas' => $row['notas']
-        ];
+        $result->free();
     }
+
+    while ($conn->more_results() && $conn->next_result()) {
+        if ($res = $conn->store_result()) {
+            $res->free();
+        }
+    }
+
 } catch (Exception $e) {
     $error_kds = "Error al obtener comandas: " . $e->getMessage();
 }
@@ -107,12 +81,14 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pantalla de Cocina</title>
     
+    <!-- Autorrefresco cada 15 segundos para actualización en tiempo real -->
     <meta http-equiv="refresh" content="15">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="menu_cocina.css">
+    <link rel="stylesheet" href="normalize.css">
 </head>
 <body>
 
@@ -128,13 +104,14 @@ try {
     <div class="kds-container">
         <div class="kds-grid">
             <?php if (!empty($error_kds)): ?>
-                <div class="empty-kds" style="color: var(--color-urgent);"><?= $error_kds ?></div>
+                <div class="empty-kds" style="color: var(--color-urgent);"><?= htmlspecialchars($error_kds) ?></div>
             <?php elseif (empty($pedidos)): ?>
                 <div class="empty-kds">No hay pedidos pendientes en cocina.</div>
             <?php else: ?>
                 <?php foreach ($pedidos as $pedido): 
                     $minutosTranscurridos = max(0, $pedido['minutos_transcurridos']);
 
+                    // Cálculo de nivel de urgencia según el tiempo transcurrido
                     $claseUrgencia = 'normal';
                     if ($minutosTranscurridos >= 10) {
                         $claseUrgencia = 'urgent';

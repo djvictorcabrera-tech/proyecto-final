@@ -1,0 +1,117 @@
+/**
+ * ARCHIVO: actualizar.css
+ * DESCRIPCIÓN: Estilos para la vista de actualización de registros/lotes (precios, stock, etc.).
+ */
+
+/* Estructura base de la página con imagen de fondo */
+body { 
+    font-family: Arial, sans-serif; 
+    display: flex; 
+    background-repeat: no-repeat; 
+    background-size: cover; 
+    background-image: url('fondo.PNG'); /* Imagen de fondo adaptada a toda la pantalla */
+}
+
+/* Tarjeta contenedora principal con traslucidez */
+.container {
+    width: 95%;
+    max-width: 1100px;
+    margin: 30px auto;
+    background: #ffffff80; /* Blanco con 50% de transparencia */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1); /* Sombra ligera de elevación */
+}
+
+/* Tablas de datos de actualización */
+table {
+    width: 100%;
+    border-collapse: collapse; /* Elimina doble borde entre celdas */
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+th {
+    background-color: #f4f4f4; /* Encabezado de tabla gris claro */
+}
+
+/* Celda para descripciones largas */
+.col-desc {
+    text-align: left;
+    font-size: 0.9em;
+    color: #202020;
+    max-width: 300px; /* Limita el ancho de descripciones */
+}
+
+/* Campos de entrada numéricos o de edición dentro de la tabla */
+.input-inline {
+    width: 90px;
+    padding: 5px;
+    text-align: right;
+}
+
+/* Botones de actualización contextual dentro de la fila */
+.btn-actualizar {
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+/* Notificaciones de estado (PHP/JS) */
+.mensaje-exito {
+    color: green;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.mensaje-error {
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Botones generales de acción rápida */
+button { 
+    width: 100%; 
+    padding: 10px; 
+    background-color: #007bff; /* Azul primario */
+    border: none; 
+    color: white; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-size: 16px;
+}
+
+/* Botón flotante superior para volver al menú anterior */
+.btn-volver {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Espaciado entre icono SVG y texto */
+    padding: 8px 16px;
+    background-color: #ffffff;
+    color: #333333;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    z-index: 1000; /* Asegura que permanezca sobre otros elementos */
+}
+
+.btn-volver:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-1px); /* Elevación sutil al pasar el cursor */
+}
+
+.btn-volver svg {
+    width: 18px;
+    height: 18px;
+}

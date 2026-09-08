@@ -1,0 +1,192 @@
+/**
+ * ARCHIVO: factura.css
+ * DESCRIPCIÓN: Estilos de la factura/ticket digital en modo oscuro y reglas de impresión en papel.
+ */
+
+/* Variables CSS con la paleta de colores corporativa (Modo Oscuro) */
+:root {
+    --bg-body: #0b111e;      /* Fondo general ultra oscuro */
+    --card-bg: #151d2a;      /* Fondo de la tarjeta de la factura */
+    --text-main: #ffffff;    /* Texto principal en blanco */
+    --text-muted: #8e9bb0;   /* Texto secundario grisáceo */
+    --primary: #3b82f6;      /* Azul neón de énfasis */
+    --border: #232f45;       /* Bordes oscuros */
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Inter', sans-serif; 
+}
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Tarjeta principal del recibo / factura */
+.invoice-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 450px;
+    padding: 32px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Cabecera del comercio */
+.invoice-header {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--border); /* Línea discontinua tipo ticket */
+}
+
+.restaurant-name { 
+    font-size: 1.4rem; 
+    font-weight: 800; 
+    color: var(--primary); 
+    letter-spacing: 1px; 
+}
+
+.invoice-title { 
+    font-size: 0.85rem; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+    margin-top: 4px; 
+}
+
+/* Metadatos (Fecha, Nro. Factura, Mesa) */
+.meta-info {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.meta-info strong { 
+    color: var(--text-main); 
+}
+
+/* Tabla de ítems consumidos */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.items-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.items-table td {
+    padding: 10px 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Utilidades de alineación */
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* Sección del total a pagar */
+.total-section {
+    border-top: 2px dashed var(--border);
+    padding-top: 16px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-label { 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+}
+
+.total-amount { 
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    color: var(--primary); 
+}
+
+/* Botones de acción (Imprimir, Volver, Notificar Cocina) */
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+}
+
+.btn-print { 
+    background-color: var(--primary); 
+    color: #fff; 
+}
+
+.btn-back { 
+    background-color: #232f45; 
+    color: var(--text-muted); 
+}
+
+.btn-cocina { 
+    background-color: #10b981; 
+    color: #ffffff; 
+}
+
+.btn-cocina:hover { 
+    background-color: #059669; 
+}
+
+.btn:hover { 
+    opacity: 0.9; 
+}
+
+/* ----------------------------------------------------
+   REGLAS PARA IMPRESIÓN (PDF o Impresora Térmica)
+   ---------------------------------------------------- */
+@media print {
+    body { 
+        background: #fff; 
+        color: #000; 
+    }
+    .invoice-card { 
+        border: none; 
+        box-shadow: none; 
+        width: 100%; 
+        max-width: 100%; 
+        padding: 0; 
+    }
+    .actions { 
+        display: none; /* Oculta los botones en la impresión */
+    }
+    .restaurant-name, .total-amount { 
+        color: #000; 
+    }
+    .items-table th, .items-table td { 
+        border-color: #ddd; 
+    }
+}

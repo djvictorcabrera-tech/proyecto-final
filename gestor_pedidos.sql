@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 06-09-2026 a las 00:59:08
+-- Tiempo de generación: 08-09-2026 a las 19:52:26
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Versión de PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -37,6 +37,13 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_estado_mesa` (IN `p_i
     WHERE id_mesa = p_id_mesa;
 END$$
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_precio_disponible` (IN `p_id_producto` INT, IN `p_precio` DECIMAL(10,2), IN `p_disponible` BOOLEAN)   BEGIN
+    UPDATE platos_bebidas 
+    SET precio = p_precio, 
+        disponible = p_disponible 
+    WHERE id_producto = p_id_producto;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_agregar_detalle_pedido` (IN `p_id_pedido` INT, IN `p_id_producto` INT, IN `p_cantidad` INT, IN `p_precio_unitario` DECIMAL(10,2))   BEGIN
     DECLARE v_subtotal DECIMAL(10,2);
     
@@ -46,6 +53,50 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_agregar_detalle_pedido` (IN `p_i
     -- 2. Insertar la línea de detalle
     INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario, subtotal)
     VALUES (p_id_pedido, p_id_producto, p_cantidad, p_precio_unitario, v_subtotal);
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_autenticar_usuario` (IN `p_identificador` VARCHAR(100))   BEGIN
+    SELECT 
+        u.id_usuario, 
+        u.nombre, 
+        u.password, 
+        u.estado, 
+        r.nombre AS nombre_rol 
+    FROM usuarios u
+    INNER JOIN roles r ON u.id_rol = r.id_rol
+    WHERE u.nombre = p_identificador OR u.email = p_identificador
+    LIMIT 1;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_completar_y_despachar_pedido` (IN `p_id_pedido` INT)   BEGIN
+    DECLARE v_id_mesa INT;
+
+    -- Manejo de errores internos en MySQL
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+
+    START TRANSACTION;
+
+    -- 1. Obtener la mesa asignada
+    SELECT id_mesa INTO v_id_mesa 
+    FROM pedidos 
+    WHERE id_pedido = p_id_pedido;
+
+    -- 2. Cambiar el estado del pedido
+    UPDATE pedidos 
+    SET estado = 'ENTREGADO' 
+    WHERE id_pedido = p_id_pedido;
+
+    -- 3. Liberar la mesa asociada si existe
+    IF v_id_mesa IS NOT NULL THEN
+        UPDATE mesas 
+        SET estado = 'DISPONIBLE' 
+        WHERE id_mesa = v_id_mesa;
+    END IF;
+
+    COMMIT;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_pedido` (IN `p_id_mesa` INT, IN `p_total` DECIMAL(10,2), OUT `p_id_pedido` INT)   BEGIN
@@ -60,36 +111,88 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_pedido` (IN `p_id_mesa` IN
     UPDATE mesas SET estado = 'OCUPADA' WHERE id_mesa = p_id_mesa;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario_y_rol` (IN `p_nombre_rol` VARCHAR(50), IN `p_descripcion_rol` VARCHAR(255), IN `p_nombre_usuario` VARCHAR(100), IN `p_email` VARCHAR(100), IN `p_password_plana` VARCHAR(255), IN `p_estado` ENUM('ACTIVO','INACTIVO'))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_usuario_y_rol` (IN `p_nombre_rol` VARCHAR(50), IN `p_descripcion_rol` VARCHAR(255), IN `p_nombre_usuario` VARCHAR(100), IN `p_email` VARCHAR(100), IN `p_password_hash` VARCHAR(255), IN `p_estado` VARCHAR(20))   BEGIN
     DECLARE v_id_rol INT;
-    DECLARE v_password_encriptada VARCHAR(255);
 
-    -- 1. Intentamos buscar si el rol ya existe
+    -- 1. Buscar si el rol ya existe
     SELECT id_rol INTO v_id_rol 
     FROM roles 
-    WHERE nombre = p_nombre_rol;
+    WHERE nombre = p_nombre_rol
+    LIMIT 1;
 
     -- 2. Si el rol NO existe, lo creamos automáticamente en la tabla roles
     IF v_id_rol IS NULL THEN
         INSERT INTO roles (nombre, descripcion) 
         VALUES (p_nombre_rol, p_descripcion_rol);
         
-        -- Obtenemos el ID del rol que acabamos de crear
         SET v_id_rol = LAST_INSERT_ID();
     END IF;
 
-    -- 3. Encriptamos la contraseña con SHA-256
-    SET v_password_encriptada = SHA2(p_password_plana, 256);
-
-    -- 4. Insertamos el usuario en la tabla usuarios vinculado a ese id_rol (y 'creado_en' se llena solo)
+    -- 3. Insertar el usuario con los campos exactos de tu tabla (nombre, email, password, estado)
     INSERT INTO usuarios (id_rol, nombre, email, password, estado)
-    VALUES (v_id_rol, p_nombre_usuario, p_email, v_password_encriptada, p_estado);
+    VALUES (v_id_rol, p_nombre_usuario, p_email, p_password_hash, p_estado);
 
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_usuario` (IN `p_id_usuario` INT)   BEGIN
+    DELETE FROM usuarios 
+    WHERE id_usuario = p_id_usuario;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_liberar_mesa` (IN `p_id_mesa` INT)   BEGIN
+    UPDATE mesas
+    SET estado = 'DISPONIBLE'
+    WHERE id_mesa = p_id_mesa;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_marcar_pedido_entregado` (IN `p_id_pedido` INT)   BEGIN
+    UPDATE pedidos
+    SET estado = 'ENTREGADO'
+    WHERE id_pedido = p_id_pedido;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_factura_pedido` (IN `p_id_pedido` INT)   BEGIN
+    -- 1. Encabezado del pedido
+    SELECT p.id_pedido, p.estado, p.total, p.creado_en, m.numero_mesa
+    FROM pedidos p
+    INNER JOIN mesas m ON p.id_mesa = m.id_mesa
+    WHERE p.id_pedido = p_id_pedido;
+
+    -- 2. Desglose de detalle del pedido
+    SELECT dp.cantidad, dp.precio_unitario, dp.subtotal, dp.notas, pb.nombre AS producto
+    FROM detalle_pedido dp
+    INNER JOIN platos_bebidas pb ON dp.id_producto = pb.id_producto
+    WHERE dp.id_pedido = p_id_pedido;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_mesas` ()   BEGIN
     SELECT id_mesa, numero_mesa, capacidad, estado 
     FROM mesas;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_mesa_por_pedido` (IN `p_id_pedido` INT, OUT `p_id_mesa` INT)   BEGIN
+    SELECT id_mesa INTO p_id_mesa
+    FROM pedidos
+    WHERE id_pedido = p_id_pedido
+    LIMIT 1;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_pedidos_activos_cocina` ()   BEGIN
+    SELECT 
+        p.id_pedido,
+        m.numero_mesa,
+        p.estado,
+        p.creado_en,
+        TIMESTAMPDIFF(MINUTE, p.creado_en, NOW()) AS minutos_transcurridos,
+        dp.cantidad,
+        dp.notas,
+        pb.nombre AS producto
+    FROM pedidos p
+    INNER JOIN mesas m ON p.id_mesa = m.id_mesa
+    INNER JOIN detalle_pedido dp ON p.id_pedido = dp.id_pedido
+    INNER JOIN platos_bebidas pb ON dp.id_producto = pb.id_producto
+    WHERE p.estado IN ('PENDIENTE', 'EN_PREPARACION')
+    ORDER BY p.creado_en ASC;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_platos_bebidas` ()   BEGIN
@@ -102,7 +205,18 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_platos_bebidas` ()   BEG
         pb.imagen_url
     FROM platos_bebidas pb
     INNER JOIN categorias c ON pb.id_categoria = c.id_categoria
-    WHERE pb.disponible = 1; 
+    WHERE pb.disponible >= 1;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_platos_bebidas2` ()   BEGIN
+    SELECT id_producto, nombre, descripcion, precio, disponible 
+    FROM platos_bebidas 
+    ORDER BY id_producto ASC;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_ultimo_id_pedido` (OUT `p_id_pedido` INT)   BEGIN
+    SELECT COALESCE(MAX(id_pedido), 0) INTO p_id_pedido
+    FROM pedidos;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuarios_con_rol` ()   BEGIN
@@ -217,7 +331,50 @@ INSERT INTO `detalle_pedido` (`id_detalle`, `id_pedido`, `id_producto`, `cantida
 (39, 28, 5, 1, 1.50, 1.50, NULL),
 (40, 29, 3, 3, 2.00, 6.00, NULL),
 (41, 30, 6, 1, 4.00, 4.00, NULL),
-(42, 30, 3, 1, 2.00, 2.00, NULL);
+(42, 30, 3, 1, 2.00, 2.00, NULL),
+(43, 32, 1, 1, 1.60, 1.60, NULL),
+(44, 32, 2, 1, 4.00, 4.00, NULL),
+(45, 32, 11, 1, 1.50, 1.50, NULL),
+(46, 32, 21, 1, 1.50, 1.50, NULL),
+(47, 34, 4, 1, 5.00, 5.00, NULL),
+(48, 35, 2, 1, 4.00, 4.00, NULL),
+(49, 35, 4, 1, 5.00, 5.00, NULL),
+(50, 36, 3, 1, 2.10, 2.10, NULL),
+(51, 36, 21, 1, 1.50, 1.50, NULL),
+(52, 37, 4, 1, 5.00, 5.00, NULL),
+(53, 38, 2, 1, 4.00, 4.00, NULL),
+(54, 39, 3, 2, 2.10, 4.20, NULL),
+(55, 39, 4, 1, 5.00, 5.00, NULL),
+(56, 40, 4, 1, 5.00, 5.00, NULL),
+(57, 41, 3, 1, 2.10, 2.10, NULL),
+(58, 42, 3, 1, 2.10, 2.10, NULL),
+(59, 43, 2, 1, 4.00, 4.00, NULL),
+(60, 44, 2, 1, 4.00, 4.00, NULL),
+(61, 45, 1, 1, 1.60, 1.60, NULL),
+(62, 46, 2, 1, 4.00, 4.00, NULL),
+(63, 47, 3, 1, 2.10, 2.10, NULL),
+(64, 47, 20, 1, 1.50, 1.50, NULL),
+(65, 48, 1, 1, 1.60, 1.60, NULL),
+(66, 49, 1, 1, 1.60, 1.60, NULL),
+(67, 50, 1, 1, 1.60, 1.60, NULL),
+(68, 51, 3, 1, 2.10, 2.10, NULL),
+(69, 51, 16, 1, 2.50, 2.50, NULL),
+(70, 52, 2, 2, 4.00, 8.00, NULL),
+(71, 52, 4, 1, 5.00, 5.00, NULL),
+(72, 53, 2, 1, 4.00, 4.00, NULL),
+(73, 54, 1, 1, 1.60, 1.60, NULL),
+(74, 55, 2, 1, 4.00, 4.00, NULL),
+(75, 56, 2, 1, 4.00, 4.00, NULL),
+(76, 57, 2, 1, 4.00, 4.00, NULL),
+(77, 58, 3, 1, 2.10, 2.10, NULL),
+(78, 58, 16, 1, 2.50, 2.50, NULL),
+(79, 58, 21, 1, 1.50, 1.50, NULL),
+(80, 59, 2, 1, 4.00, 4.00, NULL),
+(81, 60, 1, 1, 1.60, 1.60, NULL),
+(82, 61, 3, 1, 2.10, 2.10, NULL),
+(83, 62, 3, 2, 2.10, 4.20, NULL),
+(84, 63, 2, 2, 4.00, 8.00, NULL),
+(85, 63, 21, 1, 1.50, 1.50, NULL);
 
 -- --------------------------------------------------------
 
@@ -237,11 +394,11 @@ CREATE TABLE `mesas` (
 --
 
 INSERT INTO `mesas` (`id_mesa`, `numero_mesa`, `capacidad`, `estado`) VALUES
-(1, '1', 2, 'DISPONIBLE'),
+(1, '1', 2, 'OCUPADA'),
 (2, '2', 2, 'DISPONIBLE'),
 (3, '3', 2, 'DISPONIBLE'),
 (4, '4', 2, 'DISPONIBLE'),
-(5, '5', 2, 'DISPONIBLE'),
+(5, '5', 2, 'OCUPADA'),
 (6, '6', 2, 'DISPONIBLE');
 
 -- --------------------------------------------------------
@@ -292,7 +449,40 @@ INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `estado`, `total`, `creado_en`) V
 (27, 5, 'ENTREGADO', 6.50, '2026-09-05 16:41:48'),
 (28, 4, 'ENTREGADO', 7.50, '2026-09-05 16:42:38'),
 (29, 6, 'ENTREGADO', 6.00, '2026-09-05 16:44:04'),
-(30, 6, 'ENTREGADO', 6.00, '2026-09-05 16:44:17');
+(30, 6, 'ENTREGADO', 6.00, '2026-09-05 16:44:17'),
+(31, 1, 'PENDIENTE', 8.60, '2026-09-07 18:30:53'),
+(32, 5, 'ENTREGADO', 150.00, '2026-09-07 18:30:53'),
+(33, 1, 'PENDIENTE', 5.00, '2026-09-07 18:35:34'),
+(34, 5, 'ENTREGADO', 150.00, '2026-09-07 18:35:34'),
+(35, 1, 'ENTREGADO', 9.00, '2026-09-07 18:41:30'),
+(36, 4, 'ENTREGADO', 3.60, '2026-09-07 18:41:41'),
+(37, 1, 'ENTREGADO', 5.00, '2026-09-07 18:56:29'),
+(38, 3, 'ENTREGADO', 4.00, '2026-09-07 19:07:12'),
+(39, 1, 'ENTREGADO', 9.20, '2026-09-07 19:10:33'),
+(40, 1, 'ENTREGADO', 5.00, '2026-09-07 19:12:52'),
+(41, 5, 'ENTREGADO', 2.10, '2026-09-07 19:12:59'),
+(42, 1, 'ENTREGADO', 2.10, '2026-09-07 19:13:17'),
+(43, 2, 'ENTREGADO', 4.00, '2026-09-08 15:51:07'),
+(44, 3, 'ENTREGADO', 4.00, '2026-09-08 16:04:07'),
+(45, 1, 'ENTREGADO', 1.60, '2026-09-08 16:04:20'),
+(46, 2, 'ENTREGADO', 4.00, '2026-09-08 16:09:44'),
+(47, 6, 'ENTREGADO', 3.60, '2026-09-08 16:09:52'),
+(48, 1, 'ENTREGADO', 1.60, '2026-09-08 16:26:28'),
+(49, 4, 'ENTREGADO', 1.60, '2026-09-08 16:26:34'),
+(50, 1, 'ENTREGADO', 1.60, '2026-09-08 16:27:54'),
+(51, 4, 'ENTREGADO', 4.60, '2026-09-08 16:28:01'),
+(52, 1, 'ENTREGADO', 13.00, '2026-09-08 16:29:10'),
+(53, 4, 'ENTREGADO', 4.00, '2026-09-08 17:01:37'),
+(54, 1, 'ENTREGADO', 1.60, '2026-09-08 17:01:44'),
+(55, 1, 'ENTREGADO', 4.00, '2026-09-08 17:11:03'),
+(56, 1, 'ENTREGADO', 4.00, '2026-09-08 17:11:29'),
+(57, 1, 'ENTREGADO', 4.00, '2026-09-08 17:12:11'),
+(58, 4, 'ENTREGADO', 6.10, '2026-09-08 17:12:21'),
+(59, 1, 'ENTREGADO', 4.00, '2026-09-08 17:28:32'),
+(60, 4, 'ENTREGADO', 1.60, '2026-09-08 17:28:39'),
+(61, 1, 'PENDIENTE', 2.10, '2026-09-08 17:48:42'),
+(62, 5, 'PENDIENTE', 4.20, '2026-09-08 17:48:48'),
+(63, 1, 'PENDIENTE', 9.50, '2026-09-08 17:48:57');
 
 -- --------------------------------------------------------
 
@@ -315,11 +505,11 @@ CREATE TABLE `platos_bebidas` (
 --
 
 INSERT INTO `platos_bebidas` (`id_producto`, `id_categoria`, `nombre`, `descripcion`, `precio`, `imagen_url`, `disponible`) VALUES
-(1, 1, 'Hamburguesa de Carne con queso y tocineta', 'Pan\r\nCarne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 1.50, 'https://www.saborusa.com/wp-content/uploads/2019/10/Rompe-la-rutina-con-una-suculenta-hamburguesa-con-queso-Foto-destacada.png', 1),
-(2, 1, 'Hamburguesa Doble Carne', 'Pan\r\n2 trozos de Carne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 4.00, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQB9bIhAH4o15Z7hEMFfWzzTrD2LG-DdajDrOGj-FrUqSRpe4uY35CcrIM&s=10', 1),
-(3, 1, 'Hamburguesa de Carne con queso y tocineta + Papas Fritas', 'Pan\r\nCarne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 2.00, 'https://preview.redd.it/homemade-bacon-double-cheeseburger-with-fries-v0-1fjhjvn03o3c1.jpg?width=640&crop=smart&auto=webp&s=c1ad8b7a6c3706e304bb8a83023df366c70451af', 1),
-(4, 1, 'Hamburguesa Doble Carne + Papas Fritas', 'Pan\r\n2 trozos de Carne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 5.00, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwE23wtck6iFOo3tnApr01EW3xZGrNMdKevgs3D7SzytTU5vIJ9zk-ZaM&s=10', 1),
-(5, 1, 'Hamburguesa de Pollo con queso y tocineta', 'Pan\r\n180g de Pollo\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 1.50, 'https://img.magnific.com/fotos-premium/hamburguesa-pollo-tocino-queso-sobre-tabla-madera_105609-10889.jpg', 1),
+(1, 1, 'Hamburguesa de Carne con queso y tocineta', 'Pan\r\nCarne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 1.60, 'https://www.saborusa.com/wp-content/uploads/2019/10/Rompe-la-rutina-con-una-suculenta-hamburguesa-con-queso-Foto-destacada.png', 5),
+(2, 1, 'Hamburguesa Doble Carne', 'Pan\r\n2 trozos de Carne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 4.00, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQB9bIhAH4o15Z7hEMFfWzzTrD2LG-DdajDrOGj-FrUqSRpe4uY35CcrIM&s=10', 2),
+(3, 1, 'Hamburguesa de Carne con queso y tocineta + Papas Fritas', 'Pan\r\nCarne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 2.10, 'https://preview.redd.it/homemade-bacon-double-cheeseburger-with-fries-v0-1fjhjvn03o3c1.jpg?width=640&crop=smart&auto=webp&s=c1ad8b7a6c3706e304bb8a83023df366c70451af', 4),
+(4, 1, 'Hamburguesa Doble Carne + Papas Fritas', 'Pan\r\n2 trozos de Carne de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 5.00, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwE23wtck6iFOo3tnApr01EW3xZGrNMdKevgs3D7SzytTU5vIJ9zk-ZaM&s=10', 3),
+(5, 1, 'Hamburguesa de Pollo con queso y tocineta', 'Pan\r\n180g de Pollo\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 1.50, 'https://img.magnific.com/fotos-premium/hamburguesa-pollo-tocino-queso-sobre-tabla-madera_105609-10889.jpg', 2),
 (6, 1, 'Hamburguesa Doble Pollo', 'Pan\r\n2 trozos de Pollo de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa', 4.00, 'https://i.pinimg.com/originals/be/21/2c/be212c7d44d362bea0fca7bbb7e76329.jpg', 1),
 (7, 1, 'Hamburguesa de Pollo con queso y tocineta + Papas Fritas', 'Pan\r\n180g de Pollo\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 2.00, 'https://locosxlaparrilla.com/wp-content/uploads/2015/02/Receta-recetas-locos-x-la-parrilla-locosxlaparrilla-receta-hamburguesa-pollo-papas-fritas-hamburguesa-pollo-casera-hamburguesa.jpg', 1),
 (8, 1, 'Hamburguesa Doble Pollo + Papas Fritas', 'Pan\r\n2 trozos de Pollo de 180g\r\nQueso Cheddar\r\nTocineta\r\nLechuga\r\nSalsa de Tomate\r\nMayonesa\r\n100g de Papas Fritas', 5.00, 'https://img.magnific.com/foto-gratis/naturaleza-muerta-deliciosa-hamburguesa-americana_23-2149637310.jpg?semt=ais_hybrid&w=740&q=80', 1),
@@ -353,7 +543,9 @@ CREATE TABLE `roles` (
 INSERT INTO `roles` (`id_rol`, `nombre`, `descripcion`) VALUES
 (1, 'administrador', 'crea usuario'),
 (2, 'usuario', 'Rol asignado desde el registro web'),
-(3, 'mesero', 'Rol asignado desde el registro web');
+(3, 'mesero', 'Rol asignado desde el registro web'),
+(4, 'mesonero', 'Rol asignado desde el registro web'),
+(5, 'Empleado', 'Rol asignado desde el registro web');
 
 -- --------------------------------------------------------
 
@@ -376,12 +568,39 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre`, `email`, `password`, `estado`, `creado_en`) VALUES
-(1, 1, 'victor', 'dsjfijs@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-08-29 16:09:48'),
-(2, 2, 'jose', 'suifedk@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-08-29 16:12:51'),
-(3, 3, 'pedro', 'dfdfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-08-29 16:14:00'),
-(4, 2, 'ramon', 'jsdfsfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-08-29 16:15:06'),
-(5, 1, 'raul', 'dfdfdc@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'ACTIVO', '2026-09-05 14:57:35'),
-(6, 3, 'rafael', 'sdhfd@gmail.com', '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5', 'ACTIVO', '2026-09-05 15:14:31');
+(16, 4, 'jose', 'adffdaf@gmail.com', '$2y$10$sejzlxE9VbAaH6S/uO0oG.0trztXLKUyagflVntSxqP8oEPcX820m', 'ACTIVO', '2026-09-08 17:27:54'),
+(17, 4, 'ramon', 'dsagfsdgs@gmail.com', '$2y$10$tK4u6.MfkvGnENHNYEAf4.fEdyt49AqN9pHZ4BRWuqjlERsQxiQNq', 'ACTIVO', '2026-09-08 17:28:06'),
+(18, 1, 'paul', 'asdfsadfd@gmail.com', '$2y$10$1xyY7T3oTr58.IrrVv/GZuBvEcf3gV3n4WuRoxDMZrqKxvkpYLH32', 'ACTIVO', '2026-09-08 17:35:10'),
+(22, 1, 'juan', 'jsadasd@gmail.com', '$2y$10$7XlqMthtVJ57VkkYMFzoyuT/3uiaf/bWgplpy75ks8Mm.k2NGf0cu', 'ACTIVO', '2026-09-08 17:40:21'),
+(23, 4, 'raul', 'fggfxg@gmail.com', '$2y$10$CzvLDkuWNgdizMJkezt0p.z0r6uvZqTgty4g.xzEr2q1oe8Vd5OTK', 'ACTIVO', '2026-09-08 17:40:50'),
+(25, 5, 'victor perez', 'dfasdfsa@gmail.com', '$2y$10$c571Z1EJdVohOjlBJ2.DcePX7rkxvuvh5eZKiY190E.Z4Ft6Xb4fa', 'ACTIVO', '2026-09-08 17:43:26'),
+(26, 1, 'victor cabrera', 'asdfadfdas@gmail.com', '$2y$10$lTD.hUerzZ2QX9zZ8hUXMOvnChyO5Tr6WpxCBcCGZ9WtsYANN8K9O', 'ACTIVO', '2026-09-08 17:43:53');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `vista_usuarios`
+-- (Véase abajo para la vista actual)
+--
+CREATE TABLE `vista_usuarios` (
+`id_usuario` int(11)
+,`nombre_usuario` varchar(100)
+,`email` varchar(100)
+,`password` varchar(255)
+,`estado` enum('ACTIVO','INACTIVO')
+,`creado_en` timestamp
+,`id_rol` int(11)
+,`nombre_rol` varchar(50)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura para la vista `vista_usuarios`
+--
+DROP TABLE IF EXISTS `vista_usuarios`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vista_usuarios`  AS SELECT `u`.`id_usuario` AS `id_usuario`, `u`.`nombre` AS `nombre_usuario`, `u`.`email` AS `email`, `u`.`password` AS `password`, `u`.`estado` AS `estado`, `u`.`creado_en` AS `creado_en`, `r`.`id_rol` AS `id_rol`, `r`.`nombre` AS `nombre_rol` FROM (`usuarios` `u` join `roles` `r` on(`u`.`id_rol` = `r`.`id_rol`)) ;
 
 --
 -- Índices para tablas volcadas
@@ -451,7 +670,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
 
 --
 -- AUTO_INCREMENT de la tabla `mesas`
@@ -463,7 +682,7 @@ ALTER TABLE `mesas`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT de la tabla `platos_bebidas`
@@ -475,13 +694,13 @@ ALTER TABLE `platos_bebidas`
 -- AUTO_INCREMENT de la tabla `roles`
 --
 ALTER TABLE `roles`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- Restricciones para tablas volcadas

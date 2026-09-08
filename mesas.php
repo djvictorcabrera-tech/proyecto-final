@@ -1,22 +1,22 @@
 <?php
+/**
+ * ARCHIVO: mesas.php
+ * PROPÓSITO: Plano interactivo para visualización y actualización de estado de mesas (Disponible, Reservada, Ocupada).
+ */
+
 require_once 'SessionManager.php';
+require_once 'conexion.php';
+
 $session = new SessionManager();
-$usuarioConectado = $_SESSION['usuario'] ?? 'Usuario Activo';
 
-// 1. CONEXIÓN A LA BASE DE DATOS (Ajusta la contraseña si tu servidor local la requiere)
-$host = '127.0.0.1';
-$dbname = 'gestor_pedidos';
-$username = 'root';
-$password = ''; // Pon tu contraseña si tienes una configurada
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Error de conexión a la base de datos: " . $e->getMessage());
+if (!$session->estaAutenticado()) {
+    header("Location: login.php");
+    exit();
 }
 
-// 2. PROCESAR ACTUALIZACIÓN DE ESTADO (Peticiones Fetch desde JS)
+$usuarioConectado = $session->getUsuarioNombre() ?: 'Usuario Activo';
+
+// 1. PROCESAR PETICIÓN AJAX (POST JSON) PARA CAMBIAR EL ESTADO DE UNA MESA
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $rawInput = file_get_contents('php://input');
@@ -24,27 +24,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($data['action']) && $data['action'] === 'update_status') {
         try {
-            // Llama al procedimiento almacenado para actualizar el estado en la BD
-            $stmt = $pdo->prepare("CALL sp_actualizar_estado_mesa(:id_mesa, :estado)");
-            $stmt->execute([
-                ':id_mesa' => $data['id_mesa'],
-                ':estado' => $data['estado']
-            ]);
+            // Ejecución del Stored Procedure sp_actualizar_estado_mesa
+            $stmt = $conn->prepare("CALL sp_actualizar_estado_mesa(?, ?)");
+            $stmt->bind_param("is", $data['id_mesa'], $data['estado']);
+            $stmt->execute();
+            $stmt->close();
+
+            // Vaciado de búfer
+            while ($conn->more_results() && $conn->next_result()) {
+                if ($res = $conn->store_result()) $res->free();
+            }
+
             echo json_encode(['status' => 'success']);
         } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
-        exit; // Finaliza la ejecución para que no devuelva el HTML
+        exit;
     }
 }
 
-// 3. OBTENER MESAS DE LA BD AL CARGAR LA PÁGINA
+// 2. CONSULTAR LISTA DE MESAS DESDE LA BD
 $mesas_db = [];
 try {
-    // Llama al procedimiento almacenado para obtener la lista de mesas
-    $stmt = $pdo->query("CALL sp_obtener_mesas()");
-    $mesas_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stmt->closeCursor(); // Libera la conexión tras llamar al SP
+    $result = $conn->query("CALL sp_obtener_mesas()");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $mesas_db[] = $row;
+        }
+        $result->free();
+
+        while ($conn->more_results() && $conn->next_result()) {
+            if ($res = $conn->store_result()) $res->free();
+        }
+    }
 } catch (Exception $e) {
     $error_mesas = "Error al cargar mesas: " . $e->getMessage();
 }
@@ -57,6 +69,7 @@ try {
     <title>Selección de Mesas</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="mesa.css">
+    <link rel="stylesheet" href="normalize.css">
 </head>
 <body>
 
@@ -85,28 +98,25 @@ try {
 
         <?php if (isset($error_mesas)): ?>
             <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; color: var(--color-danger); text-align: center;">
-                <?= $error_mesas ?>
+                <?= htmlspecialchars($error_mesas) ?>
             </div>
         <?php endif; ?>
 
-        <div class="tables-grid" id="tables-container">
-            <!-- Renderizado dinámico con JS -->
-        </div>
+        <div class="tables-grid" id="tables-container"></div>
     </main>
 
     <script>
-        // Transfiere el arreglo de PHP a una variable de Javascript
+        // Arreglo JS con la información del servidor PHP
         const mesas = <?php echo json_encode($mesas_db); ?>;
-        
         const container = document.getElementById('tables-container');
 
+        // Función para renderizar dinámicamente las mesas en pantalla
         function renderTables() {
             container.innerHTML = '';
             
             mesas.forEach((mesa, index) => {
                 const card = document.createElement('div');
                 
-                // Determina la apariencia basada en la base de datos
                 let statusClass = 'status-available';
                 let btnClass = 'btn-reserve';
                 let btnText = 'Marcar para Reserva';
@@ -123,11 +133,9 @@ try {
 
                 card.className = `table-card ${statusClass}`;
                 
-                // Lógica al tocar la mesa: Ir al menú
+                // Redirección al menú con la mesa seleccionada
                 card.onclick = (e) => {
-                    // Evitar redirigir si se hizo clic en el botón
                     if (!e.target.classList.contains('btn-reserve') && !e.target.classList.contains('btn-free')) {
-                        // Da formato al texto. Si en la BD la mesa es "1", la pasará a "MESA 01"
                         const numMesaFormateado = mesa.numero_mesa.padStart(2, '0');
                         window.location.href = `menu.php?mesa=MESA%20${numMesaFormateado}`;
                     }
@@ -144,15 +152,12 @@ try {
             });
         }
 
-        // Función asíncrona para guardar el cambio de estado en la Base de Datos
+        // Envío del cambio de estado mediante Fetch API
         async function toggleStatus(index) {
             const mesa = mesas[index];
-            
-            // Lógica: Si está disponible, la reserva. Si está ocupada o reservada, la libera (disponible)
             const nuevoEstado = (mesa.estado === 'DISPONIBLE') ? 'RESERVADA' : 'DISPONIBLE';
 
             try {
-                // Enviar la petición al backend (a este mismo archivo)
                 const response = await fetch('mesas.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -166,7 +171,6 @@ try {
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    // Actualiza el arreglo local de javascript y vuelve a pintar las mesas
                     mesas[index].estado = nuevoEstado;
                     renderTables();
                 } else {
@@ -178,7 +182,6 @@ try {
             }
         }
 
-        // Ejecutar renderizado inicial
         document.addEventListener('DOMContentLoaded', renderTables);
     </script>
 </body>
