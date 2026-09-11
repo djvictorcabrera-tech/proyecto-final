@@ -3,69 +3,92 @@
  * DESCRIPCIÓN: Pantalla KDS (Kitchen Display System) para visualización de comandas pendientes en cocina.
  */
 
-/* Sistema de temas y alertas por semáforo de tiempo */
+/* ==========================================================================
+   1. CONFIGURACIÓN GLOBAL Y VARIABLES DE TEMA
+   ========================================================================== */
+
+/* Tipografía base por defecto antes de aplicar el reinicio universal */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /*[cite: 3]*/
+}
+
+/* Variables CSS con la paleta de colores y semáforo de tiempo de espera */
 :root {
-    --bg-main: #0b111e;
-    --bg-card: #151d2a;
-    --bg-card-hover: #1c2638;
-    --bg-sidebar: #0f172a;
-    --text-primary: #ffffff;
-    --text-muted: #8e9bb0;
+    /* Colores de fondo para el tema oscuro */
+    --bg-main: #0b111e;             /* Fondo principal de la pantalla KDS */ /*[cite: 3]*/
+    --bg-card: #151d2a;             /* Fondo para las tarjetas de comandas */ /*[cite: 3]*/
+    --bg-card-hover: #1c2638;       /* Fondo secundario de tarjetas al interactuar */ /*[cite: 3]*/
+    --bg-sidebar: #0f172a;          /* Fondo para la barra de encabezado */ /*[cite: 3]*/
     
-    --color-primary: #3b82f6;
-    --color-primary-hover: #2563eb;
+    /* Colores de texto */
+    --text-primary: #ffffff;        /* Texto blanco de alto contraste */ /*[cite: 3]*/
+    --text-muted: #8e9bb0;          /* Texto secundario grisáceo para notas o detalles */ /*[cite: 3]*/
     
-    /* SEMÁFORO DE TIEMPO DE ESPERA */
-    --color-urgent: #ef4444;       /* Rojo: Espera superior a 10 minutos */
-    --color-warning: #f59e0b;      /* Naranja: Espera entre 5 y 10 minutos */
-    --color-normal: #10b981;       /* Verde/Azul: Menos de 5 minutos */
+    /* Colores de acción e interfaz */
+    --color-primary: #3b82f6;       /* Azul base de marca */ /*[cite: 3]*/
+    --color-primary-hover: #2563eb; /* Azul oscuro para estado hover de botones */ /*[cite: 3]*/
+    
+    /* SEMÁFORO DE TIEMPO DE ESPERA EN COCINA */
+    --color-urgent: #ef4444;        /* Rojo: Comandas con espera superior a 10 minutos */ /*[cite: 3]*/
+    --color-warning: #f59e0b;       /* Naranja: Comandas con espera entre 5 y 10 minutos */ /*[cite: 3]*/
+    --color-normal: #10b981;        /* Verde: Comandas recientes con menos de 5 minutos */ /*[cite: 3]*/
 
-    --border-color: #232f45;
-    --radius-lg: 12px;
-    --radius-md: 8px;
-    --radius-sm: 6px;
+    /* Bordes y curvaturas de esquinas */
+    --border-color: #232f45;        /* Color para líneas divisoras y bordes oscuros */ /*[cite: 3]*/
+    --radius-lg: 12px;              /* Esquinas redondeadas grandes para tarjetas */ /*[cite: 3]*/
+    --radius-md: 8px;               /* Esquinas redondeadas medianas para botones */ /*[cite: 3]*/
+    --radius-sm: 6px;               /* Esquinas redondeadas pequeñas para badges */ /*[cite: 3]*/
 }
 
+/* Reinicio universal de estilos CSS */
 * { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Inter', system-ui, sans-serif; 
+    box-sizing: border-box;         /* Mantiene padding y border dentro de la dimensión del elemento */ /*[cite: 3]*/
+    margin: 0;                      /* Remueve márgenes por defecto */ /*[cite: 3]*/
+    padding: 0;                     /* Remueve rellenos por defecto */ /*[cite: 3]*/
+    font-family: 'Inter', system-ui, sans-serif; /* Asigna la fuente principal */ /*[cite: 3]*/
 }
 
+/* Ajuste del viewport para evitar barras de desplazamiento en la ventana global */
 html, body {
     width: 100vw; 
     height: 100vh;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    overflow: hidden;
+    background-color: var(--bg-main);/* Aplica el fondo azul ultra oscuro */ /*[cite: 3]*/
+    color: var(--text-primary);      /* Texto blanco general */ /*[cite: 3]*/
+    overflow: hidden;                /* Inhabilita el scroll predeterminado en el body */ /*[cite: 3]*/
 }
 
+/* Contenedor principal de la aplicación KDS */
 .app-container {
     width: 100vw; 
     height: 100vh;
     display: flex; 
-    flex-direction: column;
-    background: #111827;
+    flex-direction: column;         /* Estructura la pantalla verticalmente */ /*[cite: 3]*/
+    background: #111827;            /* Fondo de respaldo */ /*[cite: 3]*/
 }
 
-/* Encabezado KDS */
+/* ==========================================================================
+   2. BARRA DE ENCABEZADO KDS (APP HEADER)
+   ========================================================================== */
+
+/* Barra de navegación superior de cocina */
 .app-header {
     display: flex; 
-    justify-content: space-between; 
-    align-items: center;
+    justify-content: space-between; /* Distribuye el título a la izquierda y el botón a la derecha */ /*[cite: 3]*/
+    align-items: center;            /* Centra verticalmente el contenido */ /*[cite: 3]*/
     padding: 16px 32px; 
     background-color: var(--bg-sidebar);
     border-bottom: 1px solid var(--border-color); 
-    flex-shrink: 0;
+    flex-shrink: 0;                 /* Previene que la barra pierda altura si hay muchas tarjetas */ /*[cite: 3]*/
 }
 
+/* Contenedor agrupador del título y las estadísticas */
 .header-title-container { 
     display: flex; 
     align-items: center; 
-    gap: 16px; 
+    gap: 16px;                      /* Distancia entre el título y las métricas */ /*[cite: 3]*/
 }
 
+/* Título de la pantalla */
 .app-title {
     color: var(--color-primary); 
     font-size: 1.25rem;
@@ -74,6 +97,7 @@ html, body {
     text-transform: uppercase;
 }
 
+/* Badge con las estadísticas de la cocina (ej. Comandas activas) */
 .header-stats {
     background-color: var(--border-color); 
     color: #e2e8f0;
@@ -84,6 +108,7 @@ html, body {
     letter-spacing: 0.5px;
 }
 
+/* Botón para volver al menú principal u otra vista */
 .btn-back {
     background-color: var(--bg-card); 
     color: var(--text-muted);
@@ -102,57 +127,68 @@ html, body {
     border-color: var(--color-primary); 
 }
 
-/* Grilla dinámica de comandas abiertas */
+/* ==========================================================================
+   3. GRILLA Y PANEL PRINCIPAL DE COMANDAS (KDS)
+   ========================================================================== */
+
+/* Panel contenedor donde habitan las tarjetas de pedidos */
 .kds-container {
-    flex-grow: 1; 
+    flex-grow: 1;                   /* Rellena todo el espacio vertical restante */ /*[cite: 3]*/
     padding: 32px;
-    overflow-y: auto; 
-    height: calc(100vh - 65px);
+    overflow-y: auto;               /* Habilita desplazamiento vertical sólo dentro de esta área */ /*[cite: 3]*/
+    height: calc(100vh - 65px);     /* Descuenta la altura exacta del header */ /*[cite: 3]*/
 }
 
+/* Rejilla de tarjetas adaptativa */
 .kds-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-    gap: 24px; 
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); /* Crea columnas dinámicas de mínimo 310px */ /*[cite: 3]*/
+    gap: 24px;                      /* Separación uniforme entre tarjetas */ /*[cite: 3]*/
+    align-items: start;             /* Evita que las tarjetas se estiren a la misma altura si varían los ítems */ /*[cite: 3]*/
 }
 
-/* Tarjeta individual de pedido / comanda */
+/* ==========================================================================
+   4. TARJETA INDIVIDUAL DE PEDIDO / COMANDA
+   ========================================================================== */
+
+/* Estructura general de la tarjeta de comanda */
 .order-card {
     background-color: var(--bg-card);
     border-radius: var(--radius-lg);
-    border: 2px solid var(--color-normal);
+    border: 2px solid var(--color-normal); /* Borde inicial predeterminado en verde/normal */ /*[cite: 3]*/
     display: flex; 
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 380px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    justify-content: space-between; /* Mantiene la cabecera arriba, productos al medio y botón abajo */ /*[cite: 3]*/
+    min-height: 380px;              /* Altura mínima garantizada para alineación visual */ /*[cite: 3]*/
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); /* Sombra flotante */ /*[cite: 3]*/
     transition: transform 0.2s ease, opacity 0.3s ease;
     position: relative; 
     overflow: hidden;
 }
 
-/* Dinamismo de color de borde según antigüedad del pedido */
-.order-card.urgent { border-color: var(--color-urgent); }
-.order-card.warning { border-color: var(--color-warning); }
-.order-card.normal { border-color: var(--color-primary); }
+/* Modificadores de borde según la urgencia/antigüedad calculada en JavaScript */
+.order-card.urgent { border-color: var(--color-urgent); }   /* Borde rojo (muy retrasado) */ /*[cite: 3]*/
+.order-card.warning { border-color: var(--color-warning); } /* Borde naranja (alerta) */ /*[cite: 3]*/
+.order-card.normal { border-color: var(--color-primary); }   /* Borde azul/verde (reciente) */ /*[cite: 3]*/
 
+/* Cabecera interna de la comanda */
 .order-card-header {
     display: flex; 
-    justify-content: space-between; 
+    justify-content: space-between; /* Separa el número de mesa del temporizador */ /*[cite: 3]*/
     align-items: center;
     padding: 16px 20px; 
-    background-color: rgba(15, 23, 42, 0.6);
+    background-color: rgba(15, 23, 42, 0.6); /* Fondo semi-transparente oscuro */ /*[cite: 3]*/
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Nombre o número de la mesa */
 .table-name { 
     font-size: 1.15rem; 
     font-weight: 800; 
     color: #ffffff; 
 }
 
-/* Badge de contador de tiempo transcurrido */
+/* Badge que muestra el tiempo transcurrido (ej. "12 MIN") */
 .time-badge {
     font-size: 0.78rem; 
     font-weight: 800; 
@@ -161,54 +197,70 @@ html, body {
     color: #ffffff; 
     text-transform: uppercase;
 }
-.urgent .time-badge { background-color: var(--color-urgent); }
-.warning .time-badge { background-color: var(--color-warning); color: #000; }
-.normal .time-badge { background-color: var(--color-primary); }
 
-/* Detalle de ítems de la orden */
+/* Colores dinámicos del badge de tiempo según la clase del padre */
+.urgent .time-badge { background-color: var(--color-urgent); }                     /* Fondo rojo */ /*[cite: 3]*/
+.warning .time-badge { background-color: var(--color-warning); color: #000; }      /* Fondo naranja y texto negro */ /*[cite: 3]*/
+.normal .time-badge { background-color: var(--color-primary); }                    /* Fondo azul */ /*[cite: 3]*/
+
+/* ==========================================================================
+   5. DETALLE DE ÍTEMS Y NOTAS DE COCINA
+   ========================================================================== */
+
+/* Cuerpo central de la tarjeta */
 .order-card-body { 
     padding: 20px; 
-    flex-grow: 1; 
+    flex-grow: 1;                   /* Expande el cuerpo para empujar el footer abajo */ /*[cite: 3]*/
 }
 
+/* Lista desordenada que contiene los platos */
 .items-list { 
     list-style: none; 
     display: flex; 
     flex-direction: column; 
-    gap: 14px; 
+    gap: 14px;                      /* Distancia entre platos distintos */ /*[cite: 3]*/
 }
 
+/* Fila para cada plato */
 .item-row { 
     font-size: 0.92rem; 
     color: #f1f5f9; 
     line-height: 1.4; 
 }
 
+/* Destacado numérico de la cantidad solicitada (ej. "2x") */
 .item-qty { 
     font-weight: 800; 
     color: var(--color-primary); 
     margin-right: 4px; 
 }
 
+/* Resalta la cantidad en rojo si la orden entera está urgente */
 .urgent .item-qty { 
     color: var(--color-urgent); 
 }
 
+/* Indicaciones o notas especiales para el cocinero (ej. "Sin cebolla") */
 .item-note {
     display: block; 
     font-size: 0.78rem; 
     color: var(--text-muted);
     margin-top: 2px; 
-    padding-left: 16px; 
-    font-style: italic;
+    padding-left: 16px;             /* Indenta el texto para diferenciarlo del título del plato */ /*[cite: 3]*/
+    font-style: italic;             /* Aplica texto en cursiva */ /*[cite: 3]*/
 }
 
-/* Botón de orden despachada/completada */
+/* ==========================================================================
+   6. BOTÓN DE DESPACHO Y ESTADO VACÍO
+   ========================================================================== */
+
+/* Área inferior con el botón de acción */
 .order-card-footer { 
     padding: 16px 20px; 
     border-top: 1px solid var(--border-color); 
 }
 
+/* Botón para marcar el pedido como listo/despachado */
 .btn-complete {
     width: 100%; 
     background-color: var(--color-primary);
@@ -228,11 +280,12 @@ html, body {
 .btn-complete:hover {
     background-color: var(--color-primary-hover);
     box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4);
-    transform: translateY(-1px);
+    transform: translateY(-1px);    /* Ligero efecto de elevación táctil */ /*[cite: 3]*/
 }
 
+/* Mensaje visual que se muestra cuando no hay comandas pendientes */
 .empty-kds {
-    grid-column: 1 / -1; 
+    grid-column: 1 / -1;            /* Ocupa todo el ancho de las columnas del CSS Grid */ /*[cite: 3]*/
     text-align: center;
     padding: 80px 20px; 
     color: var(--text-muted); 

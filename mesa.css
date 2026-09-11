@@ -3,169 +3,215 @@
  * DESCRIPCIÓN: Mapa interactivo del salón para visualizar la disponibilidad y estado de las mesas.
  */
 
-:root {
-    --bg-main: #0b111e;
-    --bg-card: #151d2a;
-    --bg-card-hover: #1c2638;
-    --bg-sidebar: #0f172a;
-    --text-primary: #ffffff;
-    --text-muted: #8e9bb0;
-    --color-primary: #3b82f6;
-    --color-success: #10b981;  /* Verde: Libre */
-    --color-warning: #f59e0b;  /* Naranja: Reservada */
-    --color-danger: #ef4444;   /* Rojo: Ocupada */
-    --border-color: #232f45;
-    --radius-lg: 12px;
-    --radius-md: 8px;
-    --radius-sm: 6px;
-}
+/* ==========================================================================
+   1. CONFIGURACIÓN GLOBAL Y VARIABLES DE TEMA
+   ========================================================================== */
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-}
-
+/* Tipografía base de respaldo para el cuerpo de la página */
 body {
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /*[cite: 3]*/
 }
 
+/* Variables CSS con la paleta de colores corporativa y estados de mesa */
+:root {
+    --bg-main: #0b111e;        /* Fondo principal de la pantalla */ /*[cite: 3]*/
+    --bg-card: #151d2a;        /* Fondo contenedor para cada mesa */ /*[cite: 3]*/
+    --bg-card-hover: #1c2638;  /* Estado hover de tarjetas de mesa */ /*[cite: 3]*/
+    --bg-sidebar: #0f172a;     /* Fondo del encabezado superior */ /*[cite: 3]*/
+    --text-primary: #ffffff;   /* Texto blanco de alto contraste */ /*[cite: 3]*/
+    --text-muted: #8e9bb0;     /* Texto grisáceo para etiquetas o capacidad */ /*[cite: 3]*/
+    --color-primary: #3b82f6;  /* Azul de énfasis (acciones, enlaces) */ /*[cite: 3]*/
+    
+    /* Indicadores de estado de mesas */
+    --color-success: #10b981;  /* Verde: Mesa Libre / Disponible */ /*[cite: 3]*/
+    --color-warning: #f59e0b;  /* Naranja: Mesa Reservada */ /*[cite: 3]*/
+    --color-danger: #ef4444;   /* Rojo: Mesa Ocupada */ /*[cite: 3]*/
+    
+    /* Geometría y bordes */
+    --border-color: #232f45;   /* Color para líneas divisoras y bordes */ /*[cite: 3]*/
+    --radius-lg: 12px;         /* Esquinas redondeadas grandes para la tarjeta de mesa */ /*[cite: 3]*/
+    --radius-md: 8px;          /* Esquinas con redondeo medio */ /*[cite: 3]*/
+    --radius-sm: 6px;          /* Esquinas pequeñas para botones */ /*[cite: 3]*/
+}
+
+/* Reinicio de estilos por defecto (Reset CSS) */
+* {
+    box-sizing: border-box;    /* Garantiza que padding y border se incluyan en el ancho/alto total */ /*[cite: 3]*/
+    margin: 0;                 /* Remueve márgenes predeterminados */ /*[cite: 3]*/
+    padding: 0;                /* Remueve rellenos predeterminados */ /*[cite: 3]*/
+    font-family: 'Inter', sans-serif; /* Fuente Inter aplicada a todos los elementos */ /*[cite: 3]*/
+}
+
+/* Ajustes para el cuerpo de la página */
+body {
+    background-color: var(--bg-main); /* Aplica el fondo azul ultra oscuro */ /*[cite: 3]*/
+    color: var(--text-primary);       /* Texto blanco base */ /*[cite: 3]*/
+    min-height: 100vh;                /* Garantiza que la página ocupe todo el alto de la pantalla */ /*[cite: 3]*/
+    display: flex;                    /* Disposición vertical con Flexbox */ /*[cite: 3]*/
+    flex-direction: column;           /* Alinea el header arriba y el salón abajo */ /*[cite: 3]*/
+}
+
+/* ==========================================================================
+   2. ENCABEZADO DE LA APLICACIÓN (APP HEADER)
+   ========================================================================== */
+
+/* Barra de navegación superior */
 .app-header {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    padding: 16px 32px;
-    background-color: var(--bg-sidebar);
-    border-bottom: 1px solid var(--border-color);
+    grid-template-columns: 1fr auto 1fr; /* Grid simétrico para centrar el título perfectamente */ /*[cite: 3]*/
+    align-items: center;              /* Centra los elementos verticalmente */ /*[cite: 3]*/
+    padding: 16px 32px;               /* Relleno interno del header */ /*[cite: 3]*/
+    background-color: var(--bg-sidebar); /* Fondo ligeramente más claro que el body */ /*[cite: 3]*/
+    border-bottom: 1px solid var(--border-color); /* Línea divisoria inferior */ /*[cite: 3]*/
 }
 
+/* Botón/enlace para regresar */
 .btn-back {
     color: var(--text-primary);
-    text-decoration: none;
+    text-decoration: none;             /* Elimina el subrayado nativo del enlace */ /*[cite: 3]*/
     font-weight: 600;
-    display: flex;
+    display: flex;                    /* Permite alinear el texto con un posible icono */ /*[cite: 3]*/
     align-items: center;
-    gap: 8px;
+    gap: 8px;                         /* Espaciado interno entre icono y texto */ /*[cite: 3]*/
     font-size: 0.95rem;
-    transition: color 0.2s;
+    transition: color 0.2s;           /* Suaviza el cambio de color al pasar el cursor */ /*[cite: 3]*/
 }
 
 .btn-back:hover {
-    color: var(--color-primary);
+    color: var(--color-primary);       /* Cambia a azul al interactuar */ /*[cite: 3]*/
 }
 
+/* Título principal centrado */
 .app-title {
-    color: var(--color-primary);
+    color: var(--color-primary);       /* Texto en azul primario */ /*[cite: 3]*/
     font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
+    font-weight: 800;                 /* Texto en extra negrita */ /*[cite: 3]*/
+    letter-spacing: 0.8px;             /* Ligero espaciado entre letras */ /*[cite: 3]*/
+    text-transform: uppercase;        /* Convierte texto a mayúsculas */ /*[cite: 3]*/
     text-align: center;
 }
 
+/* ==========================================================================
+   3. CONTENEDOR DEL SALÓN Y GRID DE MESAS
+   ========================================================================== */
+
+/* Área principal donde se dibuja el mapa de mesas */
 .main-content {
     padding: 40px;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 1200px;                /* Limita el ancho máximo para pantallas anchas */ /*[cite: 3]*/
+    margin: 0 auto;                   /* Centra horizontalmente el contenido */ /*[cite: 3]*/
     width: 100%;
-    flex-grow: 1;
+    flex-grow: 1;                     /* Ocupa todo el espacio vertical sobrante */ /*[cite: 3]*/
 }
 
+/* Encabezado interno de la página */
 .page-header {
     margin-bottom: 30px;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between;   /* Separa título de posibles filtros o acciones */ /*[cite: 3]*/
     align-items: center;
 }
 
-/* Grid de distribución de las mesas */
+/* Grid adaptativo para la distribución de las mesas en el mapa */
 .tables-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Autoajusta columnas de mín. 200px */ /*[cite: 3]*/
+    gap: 24px;                        /* Distancia uniforme entre mesas */ /*[cite: 3]*/
 }
 
-/* Tarjeta individual de cada mesa */
+/* ==========================================================================
+   4. TARJETA INDIVIDUAL DE MESA
+   ========================================================================== */
+
+/* Tarjeta contenedora de una mesa */
 .table-card {
     background-color: var(--bg-card);
-    border: 2px solid var(--border-color);
+    border: 2px solid var(--border-color); /* Borde grueso para indicar estados con color */ /*[cite: 3]*/
     border-radius: var(--radius-lg);
     padding: 24px 16px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: column;           /* Organiza los elementos internos en vertical */ /*[cite: 3]*/
+    align-items: center;              /* Centra todos los elementos horizontalmente */ /*[cite: 3]*/
     gap: 12px;
-    transition: all 0.2s ease;
-    cursor: pointer;
+    transition: all 0.2s ease;         /* Transición suave para elevación y borde */ /*[cite: 3]*/
+    cursor: pointer;                  /* Muestra el puntero de selección */ /*[cite: 3]*/
     position: relative;
 }
 
+/* Efecto al pasar el cursor sobre la mesa */
 .table-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--color-primary);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    transform: translateY(-4px);      /* Eleva la tarjeta 4px */ /*[cite: 3]*/
+    border-color: var(--color-primary);/* Resalta el borde en azul por defecto */ /*[cite: 3]*/
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4); /* Aplica sombra flotante */ /*[cite: 3]*/
 }
 
+/* Círculo contenedor para el icono de la mesa */
 .table-icon {
     width: 50px;
     height: 50px;
-    background-color: #1e293b;
-    border-radius: 50%;
+    background-color: #1e293b;        /* Fondo oscuro para contrastar con el icono */ /*[cite: 3]*/
+    border-radius: 50%;               /* Lo transforma en una esfera perfecta */ /*[cite: 3]*/
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
 }
 
+/* Nombre o número de la mesa */
 .table-name {
     font-size: 1.2rem;
     font-weight: 700;
 }
 
+/* Capacidad de personas por mesa (ej: "4 Personas") */
 .table-capacity {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
 
+/* Etiqueta base del estado de la mesa */
 .table-status {
     font-size: 0.75rem;
     font-weight: 700;
     padding: 4px 12px;
-    border-radius: 20px;
-    text-transform: uppercase;
+    border-radius: 20px;              /* Forma de píldora */ /*[cite: 3]*/
+    text-transform: uppercase;        /* Muestra el estado en mayúsculas */ /*[cite: 3]*/
     margin-top: 4px;
 }
 
-/* ----------------------------------------------------
-   ESTILOS DE ESTADOS DE LA MESA (Disponible / Reservada / Ocupada)
-   ---------------------------------------------------- */
+/* ==========================================================================
+   5. VARIACIONES DE ESTADO (LIBRE / RESERVADA / OCUPADA)
+   ========================================================================== */
+
+/* Estado 1: Mesa Disponible / Libre */
 .status-available .table-status {
-    background-color: rgba(16, 185, 129, 0.15);
-    color: var(--color-success);
+    background-color: rgba(16, 185, 129, 0.15); /* Fondo verde translúcido */ /*[cite: 3]*/
+    color: var(--color-success);                 /* Texto verde brillante */ /*[cite: 3]*/
 }
 
+/* Estado 2: Mesa Reservada */
 .status-reserved .table-status {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: var(--color-warning);
+    background-color: rgba(245, 158, 11, 0.15); /* Fondo naranja translúcido */ /*[cite: 3]*/
+    color: var(--color-warning);                 /* Texto naranja brillante */ /*[cite: 3]*/
 }
 .status-reserved {
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: rgba(245, 158, 11, 0.3);       /* Borde naranja suave en la tarjeta */ /*[cite: 3]*/
 }
 
+/* Estado 3: Mesa Ocupada */
 .status-occupied .table-status {
-    background-color: rgba(239, 68, 68, 0.15);
-    color: var(--color-danger);
+    background-color: rgba(239, 68, 68, 0.15);  /* Fondo rojo translúcido */ /*[cite: 3]*/
+    color: var(--color-danger);                  /* Texto rojo brillante */ /*[cite: 3]*/
 }
 .status-occupied {
-    border-color: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.3);        /* Borde rojo suave en la tarjeta */ /*[cite: 3]*/
 }
 
-/* Botones de cambio manual de estado */
+/* ==========================================================================
+   6. BOTONES DE ACCIÓN MANUAL
+   ========================================================================== */
+
+/* Botón base para cambiar el estado (ej. "Reservar") */
 .btn-reserve {
     background-color: transparent;
     border: 1px solid var(--border-color);
@@ -176,16 +222,18 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    width: 100%;
+    width: 100%;                      /* Ocupa todo el ancho inferior de la tarjeta */ /*[cite: 3]*/
     margin-top: 10px;
 }
 
+/* Hover al botón de reservar */
 .btn-reserve:hover {
     background-color: var(--color-warning);
     color: #fff;
     border-color: var(--color-warning);
 }
 
+/* Hover al botón para liberar la mesa */
 .btn-free:hover {
     background-color: var(--color-success);
     color: #fff;

@@ -3,176 +3,217 @@
  * DESCRIPCIÓN: Estilos de la factura/ticket digital en modo oscuro y reglas de impresión en papel.
  */
 
+/* ==========================================================================
+   1. CONFIGURACIÓN GLOBAL Y VARIABLES
+   ========================================================================== */
+
+/* Tipografía base de respaldo para el cuerpo de la página */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; /*[cite: 2]*/
+}
+
 /* Variables CSS con la paleta de colores corporativa (Modo Oscuro) */
 :root {
-    --bg-body: #0b111e;      /* Fondo general ultra oscuro */
-    --card-bg: #151d2a;      /* Fondo de la tarjeta de la factura */
-    --text-main: #ffffff;    /* Texto principal en blanco */
-    --text-muted: #8e9bb0;   /* Texto secundario grisáceo */
-    --primary: #3b82f6;      /* Azul neón de énfasis */
-    --border: #232f45;       /* Bordes oscuros */
+    --bg-body: #0b111e;      /* Fondo general ultra oscuro de la pantalla */ /*[cite: 2]*/
+    --card-bg: #151d2a;      /* Fondo contenedor para la tarjeta de la factura */ /*[cite: 2]*/
+    --text-main: #ffffff;    /* Texto principal en blanco para máximo contraste */ /*[cite: 2]*/
+    --text-muted: #8e9bb0;   /* Texto secundario grisáceo para etiquetas o datos secundarios */ /*[cite: 2]*/
+    --primary: #3b82f6;      /* Azul neón de énfasis principal (precios, títulos) */ /*[cite: 2]*/
+    --border: #232f45;       /* Color oscuro para bordes y líneas divisoras */ /*[cite: 2]*/
 }
 
+/* Reinicio de estilos por defecto (Reset CSS) */
 * { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Inter', sans-serif; 
+    box-sizing: border-box;  /* Garantiza que padding y border se incluyan en el ancho/alto total */ /*[cite: 2]*/
+    margin: 0;               /* Remueve márgenes predeterminados del navegador */ /*[cite: 2]*/
+    padding: 0;              /* Remueve rellenos predeterminados del navegador */ /*[cite: 2]*/
+    font-family: 'Inter', sans-serif; /* Define la fuente Inter globalmente */ /*[cite: 2]*/
 }
 
+/* Estilos de la ventana/pantalla */
 body {
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
+    background-color: var(--bg-body); /* Aplica el fondo azul oscuro */ /*[cite: 2]*/
+    color: var(--text-main);          /* Texto en color blanco */ /*[cite: 2]*/
+    display: flex;                    /* Activa Flexbox para centrar la tarjeta */ /*[cite: 2]*/
+    justify-content: center;          /* Centra horizontalmente la tarjeta en pantalla */ /*[cite: 2]*/
+    align-items: center;              /* Centra verticalmente la tarjeta en pantalla */ /*[cite: 2]*/
+    min-height: 100vh;                /* Garantiza que el cuerpo ocupe al menos el 100% de la ventana */ /*[cite: 2]*/
+    padding: 20px;                    /* Espaciado de seguridad para pantallas pequeñas */ /*[cite: 2]*/
 }
 
-/* Tarjeta principal del recibo / factura */
+/* ==========================================================================
+   2. CONTENEDOR Y CABECERA DE LA FACTURA
+   ========================================================================== */
+
+/* Tarjeta principal que simula el recibo/ticket */
 .invoice-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 450px;
-    padding: 32px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    background-color: var(--card-bg); /* Fondo gris/azul oscuro contrastante */ /*[cite: 2]*/
+    border: 1px solid var(--border);  /* Borde delimitador oscuro */ /*[cite: 2]*/
+    border-radius: 12px;              /* Esquinas redondeadas suaves */ /*[cite: 2]*/
+    width: 100%;                      /* Ancho adaptable */ /*[cite: 2]*/
+    max-width: 450px;                 /* Ancho máximo para mantener apariencia de ticket */ /*[cite: 2]*/
+    padding: 32px;                    /* Espacio interno de la tarjeta */ /*[cite: 2]*/
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); /* Sombra para dar efecto de elevación 3D */ /*[cite: 2]*/
 }
 
 /* Cabecera del comercio */
 .invoice-header {
-    text-align: center;
-    padding-bottom: 20px;
-    border-bottom: 1px dashed var(--border); /* Línea discontinua tipo ticket */
+    text-align: center;               /* Alinea el nombre del restaurante y título al centro */ /*[cite: 2]*/
+    padding-bottom: 20px;             /* Separación con el bloque inferior */ /*[cite: 2]*/
+    border-bottom: 1px dashed var(--border); /* Línea discontinua que simula el corte de un ticket impreso */ /*[cite: 2]*/
 }
 
+/* Nombre comercial del negocio */
 .restaurant-name { 
-    font-size: 1.4rem; 
-    font-weight: 800; 
-    color: var(--primary); 
-    letter-spacing: 1px; 
+    font-size: 1.4rem;                /* Tamaño de fuente destacado */ /*[cite: 2]*/
+    font-weight: 800;                 /* Texto extra negrita */ /*[cite: 2]*/
+    color: var(--primary);            /* Color azul primario corporativo */ /*[cite: 2]*/
+    letter-spacing: 1px;              /* Espaciado sutil entre letras */ /*[cite: 2]*/
 }
 
+/* Subtítulo de la factura */
 .invoice-title { 
     font-size: 0.85rem; 
-    color: var(--text-muted); 
-    text-transform: uppercase; 
-    margin-top: 4px; 
+    color: var(--text-muted);         /* Texto gris atenuado */ /*[cite: 2]*/
+    text-transform: uppercase;        /* Convierte texto a mayúsculas */ /*[cite: 2]*/
+    margin-top: 4px;                  /* Espaciado respecto al nombre */ /*[cite: 2]*/
 }
+
+/* ==========================================================================
+   3. METADATOS Y DETALLE DE CONSUMOS
+   ========================================================================== */
 
 /* Metadatos (Fecha, Nro. Factura, Mesa) */
 .meta-info {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px 0;
-    font-size: 0.88rem;
-    color: var(--text-muted);
+    display: flex;                    /* Distribuye los metadatos horizontalmente */ /*[cite: 2]*/
+    justify-content: space-between;   /* Separa los bloques a extremos opuestos */ /*[cite: 2]*/
+    margin: 20px 0;                   /* Margen superior e inferior */ /*[cite: 2]*/
+    font-size: 0.88rem; 
+    color: var(--text-muted); 
 }
 
+/* Resaltado de valores numéricos o importantes */
 .meta-info strong { 
-    color: var(--text-main); 
+    color: var(--text-main);          /* Cambia los datos clave a color blanco */ /*[cite: 2]*/
 }
 
-/* Tabla de ítems consumidos */
+/* Tabla para desglose de ítems consumidos */
 .items-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
+    width: 100%;                      /* Ocupa todo el ancho disponible */ /*[cite: 2]*/
+    border-collapse: collapse;        /* Elimina espacios entre los bordes de las celdas */ /*[cite: 2]*/
+    margin: 20px 0;                   /* Separación vertical */ /*[cite: 2]*/
 }
 
+/* Encabezados de la tabla de productos */
 .items-table th {
-    text-align: left;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+    text-align: left;                 /* Alineación de texto por defecto a la izquierda */ /*[cite: 2]*/
+    font-size: 0.75rem; 
+    text-transform: uppercase;        /* Texto de encabezado en mayúsculas */ /*[cite: 2]*/
+    color: var(--text-muted); 
+    padding-bottom: 8px;              /* Separación inferior con las filas */ /*[cite: 2]*/
+    border-bottom: 1px solid var(--border); /* Línea divisoria de la cabecera de tabla */ /*[cite: 2]*/
 }
 
+/* Celdas con los detalles de productos y precios */
 .items-table td {
-    padding: 10px 0;
-    font-size: 0.9rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 0;                  /* Espaciado vertical interno de cada fila */ /*[cite: 2]*/
+    font-size: 0.9rem; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Línea divisoria muy tenue entre productos */ /*[cite: 2]*/
 }
 
-/* Utilidades de alineación */
-.text-right { text-align: right; }
-.text-center { text-align: center; }
+/* Clases utilitarias para alineación manual de columnas */
+.text-right { text-align: right; }     /* Útil para alinear montos a la derecha */ /*[cite: 2]*/
+.text-center { text-align: center; }   /* Útil para alinear cantidades al centro */ /*[cite: 2]*/
 
-/* Sección del total a pagar */
+/* ==========================================================================
+   4. SECCIÓN DEL TOTAL Y BOTONES DE ACCIÓN
+   ========================================================================== */
+
+/* Sección resumen del total a pagar */
 .total-section {
-    border-top: 2px dashed var(--border);
-    padding-top: 16px;
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    border-top: 2px dashed var(--border); /* Línea punteada superior de acento tipo ticket */ /*[cite: 2]*/
+    padding-top: 16px; 
+    margin-top: 10px; 
+    display: flex;                    /* Alinea etiqueta a la izquierda y precio a la derecha */ /*[cite: 2]*/
+    justify-content: space-between;   
+    align-items: center;              /* Centra verticalmente el texto y el valor */ /*[cite: 2]*/
 }
 
+/* Etiqueta del "Total" */
 .total-label { 
     font-size: 1.1rem; 
-    font-weight: 700; 
+    font-weight: 700;                 /* Texto en negrita */ /*[cite: 2]*/
 }
 
+/* Importe final a cancelar */
 .total-amount { 
-    font-size: 1.5rem; 
-    font-weight: 800; 
-    color: var(--primary); 
+    font-size: 1.5rem;                /* Tamaño de fuente grande para destacar */ /*[cite: 2]*/
+    font-weight: 800;                 /* Negrita marcada */ /*[cite: 2]*/
+    color: var(--primary);            /* Color azul brillante */ /*[cite: 2]*/
 }
 
-/* Botones de acción (Imprimir, Volver, Notificar Cocina) */
+/* Contenedor para botones de acción (Imprimir, Volver, Notificar Cocina) */
 .actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 28px;
+    display: flex;                    /* Distribución horizontal de botones */ /*[cite: 2]*/
+    gap: 12px;                        /* Espacio uniforme entre cada botón */ /*[cite: 2]*/
+    margin-top: 28px; 
 }
 
+/* Estilo base compartido para los botones */
 .btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-align: center;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-    transition: opacity 0.2s;
+    flex: 1;                          /* Distribuye el espacio para que todos los botones tengan el mismo ancho */ /*[cite: 2]*/
+    padding: 12px;                    /* Relleno para mayor área de clic/toque táctil */ /*[cite: 2]*/
+    border-radius: 6px; 
+    font-weight: 700; 
+    font-size: 0.85rem; 
+    text-align: center; 
+    text-decoration: none;             /* Elimina subrayados si se aplican a enlaces <a> */ /*[cite: 2]*/
+    cursor: pointer;                  /* Cambia el cursor a mano para indicar interacción */ /*[cite: 2]*/
+    border: none;                     /* Elimina el borde nativo */ /*[cite: 2]*/
+    transition: opacity 0.2s;         /* Transición suave para el estado hover */ /*[cite: 2]*/
 }
 
+/* Botón de impresión (Azul) */
 .btn-print { 
     background-color: var(--primary); 
     color: #fff; 
 }
 
+/* Botón de regresar (Gris) */
 .btn-back { 
     background-color: #232f45; 
     color: var(--text-muted); 
 }
 
+/* Botón para enviar o notificar a cocina (Verde) */
 .btn-cocina { 
-    background-color: #10b981; 
+    background-color: #10b981;        /* Esmeralda */ /*[cite: 2]*/
     color: #ffffff; 
 }
 
+/* Estado hover específico para el botón de cocina */
 .btn-cocina:hover { 
-    background-color: #059669; 
+    background-color: #059669;        /* Verde más oscuro al pasar el cursor */ /*[cite: 2]*/
 }
 
+/* Estado hover general para todos los botones */
 .btn:hover { 
-    opacity: 0.9; 
+    opacity: 0.9;                     /* Reduce levemente la opacidad al pasar el cursor */ /*[cite: 2]*/
 }
 
-/* ----------------------------------------------------
-   REGLAS PARA IMPRESIÓN (PDF o Impresora Térmica)
-   ---------------------------------------------------- */
+/* ==========================================================================
+   5. REGLAS PARA IMPRESIÓN (MEDIOS DE IMPRESIÓN / PDF)
+   ========================================================================== */
+
+/* Sobrescribe los estilos al imprimir o guardar como PDF */
 @media print {
+    /* Fondo blanco y texto negro para ahorros de tinta/impresora térmica */
     body { 
         background: #fff; 
         color: #000; 
     }
+    
+    /* Elimina bordes, sombras y padding visuales innecesarios en papel */
     .invoice-card { 
         border: none; 
         box-shadow: none; 
@@ -180,12 +221,18 @@ body {
         max-width: 100%; 
         padding: 0; 
     }
+    
+    /* Oculta los botones de interacción ya que no tienen utilidad en físico */
     .actions { 
-        display: none; /* Oculta los botones en la impresión */
+        display: none; 
     }
+    
+    /* Forzar texto en negro puro para encabezados e importe total */
     .restaurant-name, .total-amount { 
         color: #000; 
     }
+    
+    /* Cambia las líneas divisoras a gris claro apto para impresión */
     .items-table th, .items-table td { 
         border-color: #ddd; 
     }
