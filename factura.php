@@ -94,7 +94,7 @@ if ($idPedido > 0) {
         </div>
     <?php else: ?>
         <div class="invoice-header">
-            <div class="restaurant-name">GESTOR DE PEDIDOS</div>
+            <div class="restaurant-name">FACTURA</div>
             <div class="invoice-title">Comprobante de Consumo</div>
         </div>
 

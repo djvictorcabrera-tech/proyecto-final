@@ -1,0 +1,29 @@
+/* Botón flotante superior para volver al menú anterior */
+.btn-volver {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Espaciado entre icono SVG y texto */
+    padding: 8px 16px;
+    background-color: #ffffff;
+    color: #333333;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    z-index: 1000; /* Asegura que permanezca sobre otros elementos */
+}
+
+.btn-volver:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-1px); /* Elevación sutil al pasar el cursor */
+}
+
+.btn-volver svg {
+    width: 18px;
+    height: 18px;
+}

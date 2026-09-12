@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-09-2026 a las 19:52:26
--- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.0.30
+-- Tiempo de generación: 12-09-2026 a las 17:37:11
+-- Versión del servidor: 10.4.28-MariaDB
+-- Versión de PHP: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -374,7 +374,13 @@ INSERT INTO `detalle_pedido` (`id_detalle`, `id_pedido`, `id_producto`, `cantida
 (82, 61, 3, 1, 2.10, 2.10, NULL),
 (83, 62, 3, 2, 2.10, 4.20, NULL),
 (84, 63, 2, 2, 4.00, 8.00, NULL),
-(85, 63, 21, 1, 1.50, 1.50, NULL);
+(85, 63, 21, 1, 1.50, 1.50, NULL),
+(86, 64, 2, 1, 4.00, 4.00, NULL),
+(87, 65, 3, 4, 2.10, 8.40, NULL),
+(88, 65, 14, 1, 2.00, 2.00, NULL),
+(89, 65, 21, 1, 1.50, 1.50, NULL),
+(90, 66, 2, 1, 4.00, 4.00, NULL),
+(91, 66, 3, 1, 2.10, 2.10, NULL);
 
 -- --------------------------------------------------------
 
@@ -394,11 +400,11 @@ CREATE TABLE `mesas` (
 --
 
 INSERT INTO `mesas` (`id_mesa`, `numero_mesa`, `capacidad`, `estado`) VALUES
-(1, '1', 2, 'OCUPADA'),
+(1, '1', 2, 'DISPONIBLE'),
 (2, '2', 2, 'DISPONIBLE'),
 (3, '3', 2, 'DISPONIBLE'),
 (4, '4', 2, 'DISPONIBLE'),
-(5, '5', 2, 'OCUPADA'),
+(5, '5', 2, 'DISPONIBLE'),
 (6, '6', 2, 'DISPONIBLE');
 
 -- --------------------------------------------------------
@@ -480,9 +486,12 @@ INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `estado`, `total`, `creado_en`) V
 (58, 4, 'ENTREGADO', 6.10, '2026-09-08 17:12:21'),
 (59, 1, 'ENTREGADO', 4.00, '2026-09-08 17:28:32'),
 (60, 4, 'ENTREGADO', 1.60, '2026-09-08 17:28:39'),
-(61, 1, 'PENDIENTE', 2.10, '2026-09-08 17:48:42'),
-(62, 5, 'PENDIENTE', 4.20, '2026-09-08 17:48:48'),
-(63, 1, 'PENDIENTE', 9.50, '2026-09-08 17:48:57');
+(61, 1, 'ENTREGADO', 2.10, '2026-09-08 17:48:42'),
+(62, 5, 'ENTREGADO', 4.20, '2026-09-08 17:48:48'),
+(63, 1, 'ENTREGADO', 9.50, '2026-09-08 17:48:57'),
+(64, 1, 'ENTREGADO', 4.00, '2026-09-12 13:05:11'),
+(65, 5, 'ENTREGADO', 11.90, '2026-09-12 14:36:56'),
+(66, 1, 'ENTREGADO', 6.10, '2026-09-12 15:07:54');
 
 -- --------------------------------------------------------
 
@@ -570,8 +579,6 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre`, `email`, `password`, `estado`, `creado_en`) VALUES
 (16, 4, 'jose', 'adffdaf@gmail.com', '$2y$10$sejzlxE9VbAaH6S/uO0oG.0trztXLKUyagflVntSxqP8oEPcX820m', 'ACTIVO', '2026-09-08 17:27:54'),
 (17, 4, 'ramon', 'dsagfsdgs@gmail.com', '$2y$10$tK4u6.MfkvGnENHNYEAf4.fEdyt49AqN9pHZ4BRWuqjlERsQxiQNq', 'ACTIVO', '2026-09-08 17:28:06'),
-(18, 1, 'paul', 'asdfsadfd@gmail.com', '$2y$10$1xyY7T3oTr58.IrrVv/GZuBvEcf3gV3n4WuRoxDMZrqKxvkpYLH32', 'ACTIVO', '2026-09-08 17:35:10'),
-(22, 1, 'juan', 'jsadasd@gmail.com', '$2y$10$7XlqMthtVJ57VkkYMFzoyuT/3uiaf/bWgplpy75ks8Mm.k2NGf0cu', 'ACTIVO', '2026-09-08 17:40:21'),
 (23, 4, 'raul', 'fggfxg@gmail.com', '$2y$10$CzvLDkuWNgdizMJkezt0p.z0r6uvZqTgty4g.xzEr2q1oe8Vd5OTK', 'ACTIVO', '2026-09-08 17:40:50'),
 (25, 5, 'victor perez', 'dfasdfsa@gmail.com', '$2y$10$c571Z1EJdVohOjlBJ2.DcePX7rkxvuvh5eZKiY190E.Z4Ft6Xb4fa', 'ACTIVO', '2026-09-08 17:43:26'),
 (26, 1, 'victor cabrera', 'asdfadfdas@gmail.com', '$2y$10$lTD.hUerzZ2QX9zZ8hUXMOvnChyO5Tr6WpxCBcCGZ9WtsYANN8K9O', 'ACTIVO', '2026-09-08 17:43:53');
@@ -670,7 +677,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT de la tabla `mesas`
@@ -682,7 +689,7 @@ ALTER TABLE `mesas`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT de la tabla `platos_bebidas`
@@ -700,7 +707,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- Restricciones para tablas volcadas

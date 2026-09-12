@@ -140,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion']) && $_POST['a
         </form>
         <a href="logout.php"><br><button type="button">Cerrar Sesión</button></a>
         <a href="actualizar.php"><br><br><button type="button">Actualizar Precio y Cantidad</button></a>
+        <a href="grafico.php"><br><br><button type="button">Mostrar Resumen de Ventas</button></a>
     </div>
 </div>
 

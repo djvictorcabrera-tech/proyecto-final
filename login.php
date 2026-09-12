@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          
         <form method="POST" action="login.php">
             <div class="form-group">
-                <label for="usuario">Usuario:</label>
+                <label for="usuario">Nombre/Correo:</label>
                 <input type="text" id="usuario" name="usuario" required>
             </div>
             <div class="form-group">
