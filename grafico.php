@@ -1,7 +1,6 @@
 <?php
 // 1. Incluir el archivo de conexión centralizado a la BD
 require_once 'conexion.php'; // Usa la variable $conn[cite: 1]
-
 // 2. Cargar las librerías de JPGraph
 require_once 'jpgraph/src/jpgraph.php';
 require_once 'jpgraph/src/jpgraph_bar.php';
@@ -57,6 +56,7 @@ try {
     $graph->Add($barplot);
 
     // 6. Generar la imagen binaria en el navegador
+    ob_clean(); // Limpia cualquier texto o warning del buffer
     $graph->Stroke();
 
 } catch (Exception $e) {
