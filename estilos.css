@@ -114,3 +114,17 @@ th {
     max-width: 1100px; 
     margin: 20px auto; 
 }
+
+/* Color igual al del botón Cerrar Sesión */
+.btn-clave {
+    background-color: #0056b3; /* O el código hex exacto que uses para Cerrar Sesión, ej: #d9534f */
+    color: #1033a5;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    font-weight: 500;
+}
+
+.btn-clave:hover {
+    background-color: #0056b3;
+}

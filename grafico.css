@@ -1,3 +1,12 @@
+/* Estilos para el cuerpo general */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+    position: relative;
+}
+
 /* Botón flotante superior para volver al menú anterior */
 .btn-volver {
     position: absolute;
@@ -6,24 +15,43 @@
     display: inline-flex;
     align-items: center;
     gap: 8px; /* Espaciado entre icono SVG y texto */
-    padding: 8px 16px;
-    background-color: #ffffff;
-    color: #333333;
+    padding: 10px 18px;
+    background-color: #333333;
+    color: #ffffff;
     text-decoration: none;
     font-weight: bold;
     font-size: 14px;
     border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transition: background-color 0.2s ease, transform 0.1s ease;
     z-index: 1000; /* Asegura que permanezca sobre otros elementos */
 }
 
 .btn-volver:hover {
-    background-color: #f0f0f0;
-    transform: translateY(-1px); /* Elevación sutil al pasar el cursor */
+    background-color: #555555;
+    transform: translateY(-1px);
 }
 
 .btn-volver svg {
     width: 18px;
     height: 18px;
+}
+
+/* Contenedor central de la gráfica */
+.contenedor-grafica {
+    text-align: center;
+    margin-top: 60px; /* Deja espacio suficiente para el botón flotante superior */
+}
+
+.contenedor-grafica h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.contenedor-grafica img {
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: auto;
 }

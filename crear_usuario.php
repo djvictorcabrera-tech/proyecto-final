@@ -35,16 +35,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion']) && $_POST['a
     $nuevo_estado   = trim($_POST['nuevo_estado'] ?? '');
 
     if ($id_usuario_act > 0 && ($nuevo_estado == 'ACTIVO' || $nuevo_estado == 'INACTIVO')) {
-        $stmt_upd = $conn->prepare("UPDATE usuarios SET estado = ? WHERE id_usuario = ?");
+        $sql_upd = "CALL sp_actualizar_estado_usuario(?, ?)";
+        $stmt_upd = $conn->prepare($sql_upd);
         if ($stmt_upd) {
-            $stmt_upd->bind_param("si", $nuevo_estado, $id_usuario_act);
+            $stmt_upd->bind_param("is", $id_usuario_act, $nuevo_estado);
             if ($stmt_upd->execute()) {
                 $mensaje = "<p style='color: green;'>¡Estado actualizado correctamente!</p>";
             } else {
                 $mensaje = "<p style='color: red;'>Error al actualizar el estado: " . htmlspecialchars($stmt_upd->error) . "</p>";
             }
             $stmt_upd->close();
-            while($conn->more_results() && $conn->next_result());
+            
+            // Limpieza del búfer de resultados de MySQLi
+            while ($conn->more_results() && $conn->next_result());
+        } else {
+            $mensaje = "<p style='color: red;'>Error al preparar consulta: " . htmlspecialchars($conn->error) . "</p>";
         }
     }
 }
@@ -140,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion']) && $_POST['a
         </form>
         <a href="logout.php"><br><button type="button">Cerrar Sesión</button></a>
         <a href="actualizar.php"><br><br><button type="button">Actualizar Precio y Cantidad</button></a>
-        <a href="grafico.php"><br><br><button type="button">Mostrar Resumen de Ventas</button></a>
+        <a href="vista_grafica.php"><br><br><button type="button">Mostrar Resumen de Ventas</button></a>
     </div>
 </div>
 
@@ -193,6 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['accion']) && $_POST['a
 
                         echo "<button type='submit' class='" . $clase_btn . "'>" . $texto_boton . "</button>";
                         echo "</form>";
+                        // BOTÓN CLAVE: Ahora redirige a clave.php pasando el ID
+                        echo "<a href='clave.php?id=" . $id_user . "' class='btn-accion btn-clave'>Clave</a>";
 
                         // Eliminar usuario
                         echo "<form action='' method='POST' onsubmit='return confirm(\"¿Estás seguro de que deseas eliminar este usuario?\");'>";

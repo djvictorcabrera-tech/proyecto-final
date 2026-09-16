@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 12-09-2026 a las 17:37:11
--- Versión del servidor: 10.4.28-MariaDB
--- Versión de PHP: 8.2.4
+-- Tiempo de generación: 16-09-2026 a las 17:15:15
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -37,6 +37,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_estado_mesa` (IN `p_i
     WHERE id_mesa = p_id_mesa;
 END$$
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_estado_usuario` (IN `p_id_usuario` INT, IN `p_nuevo_estado` VARCHAR(20))   BEGIN
+    UPDATE usuarios 
+    SET estado = p_nuevo_estado 
+    WHERE id_usuario = p_id_usuario;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_actualizar_precio_disponible` (IN `p_id_producto` INT, IN `p_precio` DECIMAL(10,2), IN `p_disponible` BOOLEAN)   BEGIN
     UPDATE platos_bebidas 
     SET precio = p_precio, 
@@ -66,6 +72,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_autenticar_usuario` (IN `p_ident
     INNER JOIN roles r ON u.id_rol = r.id_rol
     WHERE u.nombre = p_identificador OR u.email = p_identificador
     LIMIT 1;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_password_usuario` (IN `p_id_usuario` INT, IN `p_password_hash` VARCHAR(255))   BEGIN
+    UPDATE usuarios 
+    SET password = p_password_hash 
+    WHERE id_usuario = p_id_usuario;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_completar_y_despachar_pedido` (IN `p_id_pedido` INT)   BEGIN
@@ -245,6 +257,18 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_usuario_login` (IN `p_in
       AND u.estado = 'ACTIVO';
 END$$
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_obtener_ventas_por_mes` ()   BEGIN
+    SELECT 
+        DATE_FORMAT(creado_en, '%Y-%m') AS periodo,
+        MONTHNAME(creado_en) AS nombre_mes,
+        YEAR(creado_en) AS anio,
+        SUM(total) AS total_ventas
+    FROM pedidos
+    WHERE estado = 'ENTREGADO'
+    GROUP BY YEAR(creado_en), MONTH(creado_en)
+    ORDER BY YEAR(creado_en) ASC, MONTH(creado_en) ASC;
+END$$
+
 DELIMITER ;
 
 -- --------------------------------------------------------
@@ -376,11 +400,7 @@ INSERT INTO `detalle_pedido` (`id_detalle`, `id_pedido`, `id_producto`, `cantida
 (84, 63, 2, 2, 4.00, 8.00, NULL),
 (85, 63, 21, 1, 1.50, 1.50, NULL),
 (86, 64, 2, 1, 4.00, 4.00, NULL),
-(87, 65, 3, 4, 2.10, 8.40, NULL),
-(88, 65, 14, 1, 2.00, 2.00, NULL),
-(89, 65, 21, 1, 1.50, 1.50, NULL),
-(90, 66, 2, 1, 4.00, 4.00, NULL),
-(91, 66, 3, 1, 2.10, 2.10, NULL);
+(87, 65, 3, 1, 2.10, 2.10, NULL);
 
 -- --------------------------------------------------------
 
@@ -489,9 +509,8 @@ INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `estado`, `total`, `creado_en`) V
 (61, 1, 'ENTREGADO', 2.10, '2026-09-08 17:48:42'),
 (62, 5, 'ENTREGADO', 4.20, '2026-09-08 17:48:48'),
 (63, 1, 'ENTREGADO', 9.50, '2026-09-08 17:48:57'),
-(64, 1, 'ENTREGADO', 4.00, '2026-09-12 13:05:11'),
-(65, 5, 'ENTREGADO', 11.90, '2026-09-12 14:36:56'),
-(66, 1, 'ENTREGADO', 6.10, '2026-09-12 15:07:54');
+(64, 1, 'ENTREGADO', 4.00, '2026-08-16 07:43:31'),
+(65, 5, 'ENTREGADO', 2.10, '2026-08-16 07:43:37');
 
 -- --------------------------------------------------------
 
@@ -577,11 +596,13 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `id_rol`, `nombre`, `email`, `password`, `estado`, `creado_en`) VALUES
-(16, 4, 'jose', 'adffdaf@gmail.com', '$2y$10$sejzlxE9VbAaH6S/uO0oG.0trztXLKUyagflVntSxqP8oEPcX820m', 'ACTIVO', '2026-09-08 17:27:54'),
-(17, 4, 'ramon', 'dsagfsdgs@gmail.com', '$2y$10$tK4u6.MfkvGnENHNYEAf4.fEdyt49AqN9pHZ4BRWuqjlERsQxiQNq', 'ACTIVO', '2026-09-08 17:28:06'),
-(23, 4, 'raul', 'fggfxg@gmail.com', '$2y$10$CzvLDkuWNgdizMJkezt0p.z0r6uvZqTgty4g.xzEr2q1oe8Vd5OTK', 'ACTIVO', '2026-09-08 17:40:50'),
-(25, 5, 'victor perez', 'dfasdfsa@gmail.com', '$2y$10$c571Z1EJdVohOjlBJ2.DcePX7rkxvuvh5eZKiY190E.Z4Ft6Xb4fa', 'ACTIVO', '2026-09-08 17:43:26'),
-(26, 1, 'victor cabrera', 'asdfadfdas@gmail.com', '$2y$10$lTD.hUerzZ2QX9zZ8hUXMOvnChyO5Tr6WpxCBcCGZ9WtsYANN8K9O', 'ACTIVO', '2026-09-08 17:43:53');
+(16, 4, 'jose', 'adffdaf@gmail.com', '$2y$10$SgJbbRDWY4W8i8uQVURBCuqvFvlWw5Uzr/VAO0B4bISd3gWbpn.9S', 'ACTIVO', '2026-09-08 17:27:54'),
+(17, 4, 'ramon', 'dsagfsdgs@gmail.com', '$2y$10$YJBKRikMnx32bKNWlJlrFuS04GSwk9RioSMlQY/5IcRtNTm6PAJXK', 'ACTIVO', '2026-09-08 17:28:06'),
+(18, 1, 'paul', 'asdfsadfd@gmail.com', '$2y$10$e3K1h9DLPKFoyzJt1md04.m7U/2eKkNt3I/WeKbKQivSIgvR71QhO', 'ACTIVO', '2026-09-08 17:35:10'),
+(22, 1, 'juan', 'jsadasd@gmail.com', '$2y$10$wdxPu0JtwzXIBee5ZnPXau0m8vvYZ.p2owRdHvC6OuZP0Sn/vWAxe', 'ACTIVO', '2026-09-08 17:40:21'),
+(23, 4, 'raul', 'fggfxg@gmail.com', '$2y$10$Y3/H8VrkURNjW5fF5tJYxewvvkyLGOKqJ.YBZCGB6dW3Im9.3Ibg2', 'ACTIVO', '2026-09-08 17:40:50'),
+(25, 5, 'victor perez', 'dfasdfsa@gmail.com', '$2y$10$iqT3wykQwlA/XznNRTeN7OtJVVwr/ZFnLzVIIEV8er9CkxyezofIG', 'ACTIVO', '2026-09-08 17:43:26'),
+(26, 1, 'victor cabrera', 'asdfadfdas@gmail.com', '$2y$10$5d2Bn1OGQC732LSkAq1.1uAoGlvE3X2vts8vtiLrKVhKbvzCh9WVK', 'ACTIVO', '2026-09-08 17:43:53');
 
 -- --------------------------------------------------------
 
@@ -677,7 +698,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
 -- AUTO_INCREMENT de la tabla `mesas`
@@ -689,7 +710,7 @@ ALTER TABLE `mesas`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT de la tabla `platos_bebidas`
@@ -707,7 +728,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- Restricciones para tablas volcadas
