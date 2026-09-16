@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-09-2026 a las 17:15:15
+-- Tiempo de generación: 16-09-2026 a las 18:26:34
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.0.30
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -400,7 +400,8 @@ INSERT INTO `detalle_pedido` (`id_detalle`, `id_pedido`, `id_producto`, `cantida
 (84, 63, 2, 2, 4.00, 8.00, NULL),
 (85, 63, 21, 1, 1.50, 1.50, NULL),
 (86, 64, 2, 1, 4.00, 4.00, NULL),
-(87, 65, 3, 1, 2.10, 2.10, NULL);
+(87, 65, 3, 1, 2.10, 2.10, NULL),
+(88, 66, 1, 1, 1.60, 1.60, NULL);
 
 -- --------------------------------------------------------
 
@@ -510,7 +511,8 @@ INSERT INTO `pedidos` (`id_pedido`, `id_mesa`, `estado`, `total`, `creado_en`) V
 (62, 5, 'ENTREGADO', 4.20, '2026-09-08 17:48:48'),
 (63, 1, 'ENTREGADO', 9.50, '2026-09-08 17:48:57'),
 (64, 1, 'ENTREGADO', 4.00, '2026-08-16 07:43:31'),
-(65, 5, 'ENTREGADO', 2.10, '2026-08-16 07:43:37');
+(65, 5, 'ENTREGADO', 2.10, '2026-08-16 07:43:37'),
+(66, 1, 'ENTREGADO', 1.60, '2026-09-16 16:16:24');
 
 -- --------------------------------------------------------
 
@@ -698,7 +700,7 @@ ALTER TABLE `categorias`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT de la tabla `mesas`
@@ -710,7 +712,7 @@ ALTER TABLE `mesas`
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT de la tabla `platos_bebidas`
